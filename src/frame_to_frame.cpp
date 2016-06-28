@@ -72,8 +72,7 @@ namespace uware
         }
 
         // Try visual registration
-
-
+        bool valid_sim3 = calcSim3(id);
 
         // Registration
         vector<uint> salient_indices;
@@ -199,8 +198,56 @@ namespace uware
         }
       }
     }
-
     return valid_icp;
+  }
+
+  bool FrameToFrame::calcSim3(int id)
+  {
+    // Load descriptors
+    cv::FileStorage prev_fs, curr_fs;
+    stringstream id_prev, id_curr;
+    id_prev << setfill('0') << setw(6) << id-1;
+    id_curr << setfill('0') << setw(6) << id;
+    string prev_img_data = params_.indir + "/" + IMG_DIR + "/" + id_prev.str() + ".yaml";
+    string curr_img_data = params_.indir + "/" + IMG_DIR + "/" + id_curr.str() + ".yaml";
+    prev_fs.open(prev_img_data, cv::FileStorage::READ);
+    if (!prev_fs.isOpened()) return false;
+    curr_fs.open(curr_img_data, cv::FileStorage::READ);
+    if (!curr_fs.isOpened()) return false;
+    cv::Mat prev_desc, curr_desc;
+    prev_fs["l_orb_desc"] >> prev_desc;
+    curr_fs["l_orb_desc"] >> curr_desc;
+    prev_fs.release();
+    curr_fs.release();
+
+    if (params_.show_num_of_kp)
+      ROS_INFO_STREAM("[Reconstruction]: Current kps: " << curr_desc.rows << ". Previous kps: " << prev_desc.rows);
+    if (prev_desc.rows < params_.min_desc_matches || curr_desc.rows < params_.min_desc_matches)
+    {
+      ROS_INFO_STREAM("[Reconstruction]: Low number of keypoints: " <<
+                      prev_desc.rows << "(previous) and " << curr_desc.rows <<
+                      "(current). Threshold (min_desc_matches): " << params_.min_desc_matches);
+      return false;
+    }
+    else
+    {
+      // Descriptor matching
+      vector<cv::DMatch> matches;
+      Utils::ratioMatching(prev_desc, curr_desc, params_.desc_matching_th, matches);
+      if (matches.size() < params_.min_desc_matches)
+      {
+        ROS_INFO_STREAM("[Reconstruction]: Not enough matches for sim3: " <<
+                        matches.size() << " (threshold: " << params_.min_desc_matches << ").");
+        return false;
+      }
+      else
+      {
+        // TODO
+
+      }
+    }
+
+    return true;
   }
 
 

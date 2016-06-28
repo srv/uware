@@ -144,6 +144,31 @@ public:
     }
   }
 
+  /** \brief Ratio matching between descriptors
+   * \param Descriptors of image 1
+   * \param Descriptors of image 2
+   * \param ratio value (0.6/0.9)
+   * \param output matching
+   */
+  static void ratioMatching(cv::Mat desc_1, cv::Mat desc_2, double ratio, vector<cv::DMatch> &matches)
+  {
+    matches.clear();
+    if (desc_1.rows < 10 || desc_2.rows < 10) return;
+
+    cv::Mat match_mask;
+    const int knn = 2;
+    cv::Ptr<cv::DescriptorMatcher> descriptor_matcher;
+    descriptor_matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    vector<vector<cv::DMatch> > knn_matches;
+    descriptor_matcher->knnMatch(desc_1, desc_2, knn_matches, knn, match_mask);
+    for (uint m=0; m<knn_matches.size(); m++)
+    {
+      if (knn_matches[m].size() < 2) continue;
+      if (knn_matches[m][0].distance <= knn_matches[m][1].distance * ratio)
+        matches.push_back(knn_matches[m][0]);
+    }
+  }
+
 
 };
 

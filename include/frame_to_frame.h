@@ -15,6 +15,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <sim3solver/Sim3Solver.h>
+
 #include "constants.h"
 #include "utils.h"
 
@@ -42,12 +44,15 @@ public:
     double min_salient_ids;         //!> Minimum percentage of salient indices to consider a pointcloud valid for registration
     double max_icp_fitness_score;   //!> Maximum icp fitness score to consider a valid icp registration
     double max_reg_err;             //!> Maximum registration error between odometry and ICP or Sim3 (euclidean distance in meters)
+    double desc_matching_th;        //!> Descriptor matching threshold
+    int min_desc_matches;           //!> Minimum number of descriptor matches to proceed with the Sim3
 
     // Debug
     bool show_salient_ids;          //!> Show the salient indices percentage
     bool show_icp_score;            //!> Show the icp fitness score
     bool show_icp_tf;               //!> Show the icp output transformation
     bool save_icp_clouds;           //!> Save paired clouds
+    bool show_num_of_kp;            //!> Show the number of keypoints
 
     // Default settings
     Params () {
@@ -57,11 +62,14 @@ public:
       min_salient_ids         = 15.0;
       max_icp_fitness_score   = 0.1;
       max_reg_err             = 0.3;
+      desc_matching_th        = 0.7;
+      min_desc_matches        = 50;
 
       show_salient_ids        = false;
       show_icp_score          = false;
       show_icp_tf             = false;
       save_icp_clouds         = false;
+      show_num_of_kp          = false;
     }
   };
 
@@ -109,6 +117,7 @@ protected:
    */
   bool registration(int id, PointCloud::Ptr prev_cloud, PointCloud::Ptr curr_cloud, vector<uint>& salient_indices);
 
+  bool calcSim3(int id);
 
 private:
 

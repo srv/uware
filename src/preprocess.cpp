@@ -115,6 +115,22 @@ namespace uware
       storeOdometry(ODOM_FILE, id_, stamp, odom);
       storeOdometry(OMAP_FILE,  id_, stamp, map);
 
+      // --------------------------------
+      tf::Matrix3x3 obase = odom.getBasis();
+      tf::Matrix3x3 mbase = map.getBasis();
+      double oyaw, myaw, dummy_1, dummy_2;
+      obase.getRPY(dummy_1, dummy_2, oyaw);
+      mbase.getRPY(dummy_1, dummy_2, myaw);
+      cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
+      cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
+
+      cv::FileStorage fs(params_.outdir + "/homographies/" + ss.str() + ".yaml", cv::FileStorage::WRITE);
+      write(fs, "filename", "/tmp/mosaicing/images/" + ss.str() + ".jpg");
+      write(fs, "HO", HO);
+      write(fs, "HM", HM);
+      fs.release();
+      // --------------------------------
+
       // Store image information
       cv::Mat l_img, r_img;
       imgMsgToMat(*l_img_msg, *r_img_msg, l_img, r_img);
@@ -136,6 +152,9 @@ namespace uware
   bool PreProcess::createDirs()
   {
     if (!Utils::createDir(params_.outdir))
+      return false;
+
+    if (!Utils::createDir(params_.outdir + "/homographies"))
       return false;
 
     if (!Utils::createDir(params_.outdir + "/" + PC_DIR))
