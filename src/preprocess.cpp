@@ -135,38 +135,14 @@ namespace uware
 
   bool PreProcess::createDirs()
   {
-    // Create the output directory
-    string output_dir = params_.outdir;
-    if (fs::is_directory(output_dir))
-      fs::remove_all(output_dir);
-    fs::path dir1(output_dir);
-    if (!fs::create_directory(dir1))
-    {
-      ROS_ERROR("[PreProcess]: Impossible to create the output directory.");
+    if (!Utils::createDir(params_.outdir))
       return false;
-    }
 
-    // Create the pointclouds directory
-    string pointclouds_dir = params_.outdir + "/" + PC_DIR;
-    if (fs::is_directory(pointclouds_dir))
-      fs::remove_all(pointclouds_dir);
-    fs::path dir2(pointclouds_dir);
-    if (!fs::create_directory(dir2))
-    {
-      ROS_ERROR("[PreProcess]: Impossible to create the pointclouds directory.");
+    if (!Utils::createDir(params_.outdir + "/" + PC_DIR))
       return false;
-    }
 
-    // Create the images directory
-    string images_dir = params_.outdir + "/" + IMG_DIR;
-    if (fs::is_directory(images_dir))
-      fs::remove_all(images_dir);
-    fs::path dir3(images_dir);
-    if (!fs::create_directory(dir3))
-    {
-      ROS_ERROR("[PreProcess]: Impossible to create the images directory.");
+    if (!Utils::createDir(params_.outdir + "/" + IMG_DIR))
       return false;
-    }
 
     // Remove files
     string cm_file   = params_.outdir + "/" + CAMERA_MATRIX_FILE;

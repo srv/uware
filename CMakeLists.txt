@@ -36,7 +36,8 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   tf_conversions
   libhaloc
-  orb_utils)
+  orb_utils
+  sim3solver)
 
 ####################################################
 # Dependencies:

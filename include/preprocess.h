@@ -34,6 +34,7 @@
 #include <orb_utils/ORBextractor.h>
 
 #include "constants.h"
+#include "utils.h"
 
 using namespace std;
 using namespace boost;

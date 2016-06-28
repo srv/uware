@@ -21,10 +21,13 @@ int main(int argc, char **argv)
   nhp.param("outdir",           ftf_params.outdir,            ros::package::getPath("uware") + "/" + RECONSTRUCTION_DIR);
   nhp.param("z_diff_th",        ftf_params.z_diff_th,         15.0);
   nhp.param("min_salient_ids",  ftf_params.min_salient_ids,   15.0);
+  nhp.param("max_reg_err",      ftf_params.max_reg_err,       0.3);
+
 
   nhp.param("show_salient_ids", ftf_params.show_salient_ids,  false);
   nhp.param("show_icp_score",   ftf_params.show_icp_score,    false);
   nhp.param("show_icp_tf",      ftf_params.show_icp_tf,       false);
+  nhp.param("save_icp_clouds",  ftf_params.save_icp_clouds,   false);
 
   // Frame to frame registration
   FrameToFrame frame_to_frame;

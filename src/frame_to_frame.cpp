@@ -8,20 +8,11 @@ namespace uware
 
   void FrameToFrame::compute()
   {
-
-    // Create the output directory
-    string output_dir = params_.outdir;
-    if (fs::is_directory(output_dir))
-      fs::remove_all(output_dir);
-    fs::path dir1(output_dir);
-    if (!fs::create_directory(dir1))
-    {
-      ROS_ERROR("[Reconstruction]: Impossible to create the output directory.");
-    }
+    // Create directories
+    if (!createDirs()) return;
 
     // Read poses
-    vector< pair<string, tf::Transform> > cloud_poses;
-    Utils::readPoses(params_.indir + "/" + OMAP_FILE, cloud_poses);
+    Utils::readPoses(params_.indir + "/" + ODOM_FILE, cloud_poses_);
 
     // Sort directory of pointclouds by name
     typedef std::vector<fs::path> vec;
@@ -49,10 +40,10 @@ namespace uware
         ROS_INFO_STREAM("[Reconstruction]: Processing cloud: " << filename);
 
         // Search current pointcloud into the cloud poses
-        uint id = getCloudPoseId(rawname, cloud_poses);
+        uint id = getCloudPoseId(rawname, cloud_poses_);
         if (id < 0)
         {
-          ROS_ERROR_STREAM("[Reconstruction]: Impossible to find the id into the cloud_poses array for file: " << filename);
+          ROS_ERROR_STREAM("[Reconstruction]: Impossible to find the id into the cloud_poses_ array for file: " << filename);
           break;
         }
 
@@ -73,49 +64,29 @@ namespace uware
           vector<uint> salient_indices;
           Utils::getCloudSalientIndices(prev_cloud_, salient_indices, params_.z_diff_th);
           prev_cloud_salient_ids_ = salient_indices.size() * 100.0 / prev_cloud_->size();
+          prev_rawname_ = rawname;
 
           first_ = false;
           it++;
           continue;
         }
 
-        // Determine if current and previous pointcloud are useful for registration
+        // Try visual registration
+
+
+
+        // Registration
         vector<uint> salient_indices;
-        Utils::getCloudSalientIndices(in_cloud, salient_indices, params_.z_diff_th);
-        double curr_salient_ids = salient_indices.size() * 100.0 / in_cloud->size();
-
-        if (params_.show_salient_ids)
-          ROS_INFO_STREAM("[Reconstruction]: Salient indices for " << filename << " is: " << curr_salient_ids << "\%");
-
-        if (prev_cloud_salient_ids_ > params_.min_salient_ids &&
-            curr_salient_ids > params_.min_salient_ids)
-        {
-          // Frame to frame registration
-          ROS_INFO_STREAM("[Reconstruction]: " << filename << " is useful for registration.");
-          ROS_INFO("[Reconstruction]: Aligning clouds...");
-
-          // Transform current cloud according to slam pose
-          tf::Transform tf_prev = cloud_poses[id-1].second;
-          tf::Transform tf_curr = cloud_poses[id].second;
-          tf::Transform tf_01 = tf_prev.inverse() * tf_curr;
-          Eigen::Affine3d tf_01_eigen;
-          transformTFToEigen(tf_01, tf_01_eigen);
-          PointCloud::Ptr prev_cloud_moved(new PointCloud);
-          pcl::transformPointCloud(*prev_cloud_, *prev_cloud_moved, tf_01_eigen);
-
-          // Pair align
-          tf::Transform correction;
-          pairAlign(prev_cloud_moved, in_cloud, correction);
-
-        }
-        else
+        bool valid_icp = registration(id, prev_cloud_, in_cloud, salient_indices);
+        if (!valid_icp)
         {
           // No 3D information for registration, try visual registration
         }
 
         // Copy
         pcl::copyPointCloud(*in_cloud, *prev_cloud_);
-        prev_cloud_salient_ids_ = curr_salient_ids;
+        prev_cloud_salient_ids_ = salient_indices.size() * 100.0 / prev_cloud_->size();
+        prev_rawname_ = rawname;
 
       }
       // Next directory entry
@@ -125,11 +96,22 @@ namespace uware
 
   }
 
-  int FrameToFrame::getCloudPoseId(string rawname, vector< pair<string, tf::Transform> > cloud_poses)
+  bool FrameToFrame::createDirs()
   {
-    for (uint i=0; i<cloud_poses.size(); i++)
+    if (!Utils::createDir(params_.outdir))
+      return false;
+
+    if (!Utils::createDir(params_.outdir + "/" + PAIRED_CLOUDS_DIR))
+      return false;
+
+    return true;
+  }
+
+  int FrameToFrame::getCloudPoseId(string rawname, vector< pair<string, tf::Transform> > cloud_poses_)
+  {
+    for (uint i=0; i<cloud_poses_.size(); i++)
     {
-      if (cloud_poses[i].first == rawname)
+      if (cloud_poses_[i].first == rawname)
         return i;
     }
     return -1;
@@ -165,6 +147,60 @@ namespace uware
 
     // Return valid or not
     return ( icp.hasConverged() && (score < params_.max_icp_fitness_score) );
+  }
+
+  bool FrameToFrame::registration(int id, PointCloud::Ptr prev_cloud, PointCloud::Ptr curr_cloud, vector<uint>& salient_indices)
+  {
+    // Determine if current and previous pointcloud are useful for registration
+    salient_indices.clear();
+    Utils::getCloudSalientIndices(curr_cloud, salient_indices, params_.z_diff_th);
+    double curr_salient_ids = salient_indices.size() * 100.0 / curr_cloud->size();
+
+    if (params_.show_salient_ids)
+      ROS_INFO_STREAM("[Reconstruction]: Salient indices for " << cloud_poses_[id].first << ".pcd is: " << curr_salient_ids << "\%");
+
+    bool valid_icp = false;
+    if (prev_cloud_salient_ids_ > params_.min_salient_ids &&
+        curr_salient_ids > params_.min_salient_ids)
+    {
+      // Frame to frame registration
+      ROS_INFO_STREAM("[Reconstruction]: " << cloud_poses_[id].first << ".pcd is useful for registration.");
+      ROS_INFO("[Reconstruction]: Aligning clouds...");
+
+      // Transform current cloud according to slam pose
+      tf::Transform tf_prev = cloud_poses_[id-1].second;
+      tf::Transform tf_curr = cloud_poses_[id].second;
+      tf::Transform tf_01 = tf_curr.inverse() * tf_prev;
+      Eigen::Affine3d tf_01_eigen;
+      transformTFToEigen(tf_01, tf_01_eigen);
+      PointCloud::Ptr prev_cloud_moved(new PointCloud);
+      pcl::transformPointCloud(*prev_cloud_, *prev_cloud_moved, tf_01_eigen);
+
+      // Pair align
+      tf::Transform correction;
+      valid_icp = pairAlign(prev_cloud_moved, curr_cloud, correction);
+      if (valid_icp && params_.save_icp_clouds)
+      {
+        // Make the new directory
+        stringstream ss;
+        ss << setfill('0') << setw(6) << (id-1) << "_to_" << setfill('0') << setw(6) << (id);
+        string paired_dir = params_.outdir + "/" + PAIRED_CLOUDS_DIR + "/" + ss.str();
+        if (Utils::createDir(paired_dir))
+        {
+          // Move and save
+          Eigen::Affine3d correction_eigen;
+          transformTFToEigen(correction, correction_eigen);
+          pcl::transformPointCloud(*prev_cloud_moved, *prev_cloud_moved, correction_eigen);
+
+          string pc0_filename = paired_dir + "/" + cloud_poses_[id].first + ".pcd";
+          pcl::io::savePCDFileBinary(pc0_filename, *curr_cloud);
+          string pc1_filename = paired_dir + "/" + prev_rawname_ + ".pcd";
+          pcl::io::savePCDFileBinary(pc1_filename, *prev_cloud_moved);
+        }
+      }
+    }
+
+    return valid_icp;
   }
 
 

@@ -13,6 +13,8 @@ namespace uware
 
   static const string IMG_DIR = "images";
 
+  static const string PAIRED_CLOUDS_DIR = "paired_pointclouds";
+
   static const string CAMERA_MATRIX_FILE = "camera_matrix.yaml";
 
   static const string ODOM_FILE = "odom.txt";

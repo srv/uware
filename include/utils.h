@@ -8,6 +8,10 @@
 #include <pcl_ros/point_cloud.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
+
+using namespace boost;
+namespace fs  = filesystem;
 
 namespace uware
 {
@@ -20,6 +24,23 @@ public:
   // Definitions
   typedef pcl::PointXYZRGB        Point;
   typedef pcl::PointCloud<Point>  PointCloud;
+
+  /** \brief Create a directory
+   * @return true if directory was created successfully
+   * \param directory path
+   */
+  static bool createDir(string dir_name)
+  {
+    if (fs::is_directory(dir_name))
+      fs::remove_all(dir_name);
+    fs::path dir1(dir_name);
+    if (!fs::create_directory(dir1))
+    {
+      ROS_ERROR_STREAM("[PreProcess]: Impossible to create the directory: " << dir_name);
+      return false;
+    }
+    return true;
+  }
 
 
   /** \brief Get cloud salient indices
