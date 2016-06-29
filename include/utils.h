@@ -169,6 +169,23 @@ public:
     }
   }
 
+  static tf::Transform buildTransformation(cv::Mat rvec, cv::Mat tvec)
+  {
+    if (rvec.empty() || tvec.empty())
+      return tf::Transform();
+
+    tf::Vector3 axis(rvec.at<double>(0, 0),
+                     rvec.at<double>(1, 0),
+                     rvec.at<double>(2, 0));
+    double angle = norm(rvec);
+    tf::Quaternion quaternion(axis, angle);
+
+    tf::Vector3 translation(tvec.at<double>(0, 0), tvec.at<double>(1, 0),
+        tvec.at<double>(2, 0));
+
+    return tf::Transform(quaternion, translation);
+  }
+
 
 };
 

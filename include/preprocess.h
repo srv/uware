@@ -59,14 +59,16 @@ public:
     double store_distance;    //!> Distance at which pointclouds are stored (m)
     bool use_2d_distance;     //!> Use 2D distance to calculate when store a new pointcloud
     double voxel_resolution;  //!> Voxel filter cloud resolution (m)
+    double epipolar_th;       //!> Epipolar threshold for the stereo matching
 
     // Default settings
     Params () {
-      outdir   = "";
-      min_cloud_size = 1000;
-      store_distance = 0.5;
-      use_2d_distance = false;
-      voxel_resolution = 0.02;
+      outdir            = "";
+      min_cloud_size    = 100;
+      store_distance    = 0.5;
+      use_2d_distance   = false;
+      voxel_resolution  = 0.02;
+      epipolar_th       = 1.5;
     }
   };
 
@@ -185,6 +187,7 @@ private:
 
   cv::Mat camera_matrix_; //!> Camera matrix
 
+  image_geometry::StereoCameraModel stereo_camera_model_; //!> Stereo camera model
   float baseline_; //!> Stereo baseline multiplied by fx.
 
 };

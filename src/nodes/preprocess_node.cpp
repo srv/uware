@@ -28,10 +28,12 @@ int main(int argc, char **argv)
   nhp.param("map_topic",        map_topic,                  string(""));
   nhp.param("camera_topic",     camera_topic,               string(""));
   nhp.param("outdir",           params.outdir,              ros::package::getPath("uware") + "/" + PREPROCESS_DIR);
-  nhp.param("min_cloud_size",   params.min_cloud_size,      1000);
+  nhp.param("min_cloud_size",   params.min_cloud_size,      100);
   nhp.param("store_distance",   params.store_distance,      0.5);
   nhp.param("use_2d_distance",  params.use_2d_distance,     false);
   nhp.param("voxel_resolution", params.voxel_resolution,    0.02);
+  nhp.param("epipolar_th",      params.epipolar_th,         1.5);
+
 
   // Init the node
   PreProcess node;

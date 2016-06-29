@@ -46,8 +46,11 @@ public:
     double max_reg_err;             //!> Maximum registration error between odometry and ICP or Sim3 (euclidean distance in meters)
     double desc_matching_th;        //!> Descriptor matching threshold
     int min_desc_matches;           //!> Minimum number of descriptor matches to proceed with the Sim3
+    double reproj_err;              //!> Sim3 reprojection error
+    int min_inliers;                //!> Minimum number of inliers to consider a Sim3 valid
 
     // Debug
+    bool show_generic_logs;         //!> Show generic logs
     bool show_salient_ids;          //!> Show the salient indices percentage
     bool show_icp_score;            //!> Show the icp fitness score
     bool show_icp_tf;               //!> Show the icp output transformation
@@ -64,7 +67,10 @@ public:
       max_reg_err             = 0.3;
       desc_matching_th        = 0.7;
       min_desc_matches        = 50;
+      reproj_err              = 4.0;
+      min_inliers             = 20;
 
+      show_generic_logs       = false;
       show_salient_ids        = false;
       show_icp_score          = false;
       show_icp_tf             = false;
@@ -108,7 +114,7 @@ protected:
    */
   bool pairAlign(PointCloud::Ptr src, PointCloud::Ptr tgt, tf::Transform &output);
 
-  /** \brief Performs all the registration
+  /** \brief Performs a 3D registration
    * @return true if registration is valid
    * \param id
    * \param previous pointcloud
@@ -117,13 +123,20 @@ protected:
    */
   bool registration(int id, PointCloud::Ptr prev_cloud, PointCloud::Ptr curr_cloud, vector<uint>& salient_indices);
 
-  bool calcSim3(int id);
+  /** \brief Performs a visual registration
+   * @return true if registration is valid
+   * \param id
+   * \param output estimated transform
+   */
+  bool calcSim3(int id, tf::Transform& output);
 
 private:
 
   Params params_; //!> Stores parameters.
 
   bool first_; //!> First iteration
+
+  cv::Mat camera_matrix_; //!> Camera matrix
 
   vector< pair<string, tf::Transform> > cloud_poses_; //!> Array of cloud of poses
 

@@ -14,6 +14,11 @@ namespace uware
     // Read poses
     Utils::readPoses(params_.indir + "/" + ODOM_FILE, cloud_poses_);
 
+    // Read camera matrix
+    cv::FileStorage fs(params_.indir + "/" + CAMERA_MATRIX_FILE, cv::FileStorage::READ);
+    fs["camera_matrix"] >> camera_matrix_;
+    fs.release();
+
     // Sort directory of pointclouds by name
     typedef std::vector<fs::path> vec;
     vec v;
@@ -71,16 +76,17 @@ namespace uware
           continue;
         }
 
-        // Try visual registration
-        bool valid_sim3 = calcSim3(id);
+        // Visual registration
+        tf::Transform output;
 
-        // Registration
+
+        // TODO: Use initial guest!!!
+
+        bool valid_sim3 = calcSim3(id, output);
+
+        // 3D Registration
         vector<uint> salient_indices;
         bool valid_icp = registration(id, prev_cloud_, in_cloud, salient_indices);
-        if (!valid_icp)
-        {
-          // No 3D information for registration, try visual registration
-        }
 
         // Copy
         pcl::copyPointCloud(*in_cloud, *prev_cloud_);
@@ -201,8 +207,10 @@ namespace uware
     return valid_icp;
   }
 
-  bool FrameToFrame::calcSim3(int id)
+  bool FrameToFrame::calcSim3(int id, tf::Transform& output)
   {
+    output.setIdentity();
+
     // Load descriptors
     cv::FileStorage prev_fs, curr_fs;
     stringstream id_prev, id_curr;
@@ -215,8 +223,13 @@ namespace uware
     curr_fs.open(curr_img_data, cv::FileStorage::READ);
     if (!curr_fs.isOpened()) return false;
     cv::Mat prev_desc, curr_desc;
-    prev_fs["l_orb_desc"] >> prev_desc;
-    curr_fs["l_orb_desc"] >> curr_desc;
+    vector<cv::KeyPoint> prev_kp;
+    vector<cv::Point3d> curr_wp;
+    cv::FileNode prev_kp_node = prev_fs["l_kp"];
+    read(prev_kp_node, prev_kp);
+    prev_fs["l_desc"]       >> prev_desc;
+    curr_fs["l_desc"]       >> curr_desc;
+    curr_fs["world_points"] >> curr_wp;
     prev_fs.release();
     curr_fs.release();
 
@@ -224,9 +237,10 @@ namespace uware
       ROS_INFO_STREAM("[Reconstruction]: Current kps: " << curr_desc.rows << ". Previous kps: " << prev_desc.rows);
     if (prev_desc.rows < params_.min_desc_matches || curr_desc.rows < params_.min_desc_matches)
     {
-      ROS_INFO_STREAM("[Reconstruction]: Low number of keypoints: " <<
-                      prev_desc.rows << "(previous) and " << curr_desc.rows <<
-                      "(current). Threshold (min_desc_matches): " << params_.min_desc_matches);
+      if (params_.show_generic_logs)
+        ROS_INFO_STREAM("[Reconstruction]: Low number of keypoints: " <<
+                        prev_desc.rows << "(previous) and " << curr_desc.rows <<
+                        "(current). Threshold (min_desc_matches): " << params_.min_desc_matches);
       return false;
     }
     else
@@ -234,20 +248,43 @@ namespace uware
       // Descriptor matching
       vector<cv::DMatch> matches;
       Utils::ratioMatching(prev_desc, curr_desc, params_.desc_matching_th, matches);
-      if (matches.size() < params_.min_desc_matches)
+      if ((int)matches.size() < params_.min_desc_matches)
       {
-        ROS_INFO_STREAM("[Reconstruction]: Not enough matches for sim3: " <<
-                        matches.size() << " (threshold: " << params_.min_desc_matches << ").");
+        if (params_.show_generic_logs)
+          ROS_INFO_STREAM("[Reconstruction]: Not enough matches for Sim3: " <<
+                          matches.size() << " (threshold: " << params_.min_desc_matches << ").");
         return false;
       }
       else
       {
-        // TODO
+        // Build the matches vector
+        vector<cv::Point2f> matched_kp_prev;
+        vector<cv::Point3f> matched_3d_curr;
+        for(uint i=0; i<matches.size(); i++)
+        {
+          matched_kp_prev.push_back(prev_kp[matches[i].queryIdx].pt);
+          matched_3d_curr.push_back(curr_wp[matches[i].trainIdx]);
+        }
 
+        // Estimate the motion
+        vector<int> inliers;
+        cv::Mat rvec, tvec;
+        cv::solvePnPRansac(matched_3d_curr, matched_kp_prev, camera_matrix_,
+                           cv::Mat(), rvec, tvec, false,
+                           100, params_.reproj_err, 100, inliers);
+
+        if (params_.show_generic_logs)
+          ROS_INFO_STREAM("[Reconstruction]: Sim3 inliers: " << inliers.size());
+
+        if ((int)inliers.size() >= params_.min_inliers)
+        {
+          output = Utils::buildTransformation(rvec, tvec);
+          return true;
+        }
       }
     }
 
-    return true;
+    return false;
   }
 
 

@@ -63,9 +63,8 @@ namespace uware
       ROS_INFO("[PreProcess]: Camera matrix stored.");
 
       // Stereo baseline times fx
-      image_geometry::StereoCameraModel stereo_camera_model;
-      stereo_camera_model.fromCameraInfo(*l_info_msg, *r_info_msg);
-      baseline_ = (float)stereo_camera_model.baseline()*camera_matrix_.at<float>(0,0);
+      stereo_camera_model_.fromCameraInfo(*l_info_msg, *r_info_msg);
+      baseline_ = (double)stereo_camera_model_.baseline()*camera_matrix_.at<double>(0,0);
 
       // System initialized
       initialization_ = false;
@@ -216,18 +215,10 @@ namespace uware
                                               r_ORB_extractor_,
                                               camera_matrix_,
                                               baseline_);
-    std::vector<cv::KeyPoint> l_kp = frame.mvKeys;
-    std::vector<cv::KeyPoint> r_kp = frame.mvKeysRight;
-    cv::Mat l_orb_desc             = frame.mDescriptors;
-    cv::Mat r_orb_desc             = frame.mDescriptorsRight;
-
-    // Extract SIFT
-    cv::initModule_nonfree();
-    cv::Mat l_sift_desc, r_sift_desc;
-    cv::Ptr<cv::DescriptorExtractor> cv_extractor;
-    cv_extractor = cv::DescriptorExtractor::create("SIFT");
-    cv_extractor->compute(l_img, l_kp, l_sift_desc);
-    cv_extractor->compute(r_img, r_kp, r_sift_desc);
+    vector<cv::KeyPoint> l_kp, r_kp;
+    cv::Mat l_desc, r_desc;
+    vector<cv::Point3d> world_points;
+    frame.GetLeftRightMatchings(l_kp, r_kp, l_desc, r_desc, world_points, stereo_camera_model_, params_.epipolar_th);
 
     // Store
     stringstream ss;
@@ -235,10 +226,10 @@ namespace uware
     cv::FileStorage fs(params_.outdir + "/" + IMG_DIR + "/" + ss.str() + ".yaml", cv::FileStorage::WRITE);
     write(fs, "l_kp", l_kp);
     write(fs, "r_kp", r_kp);
-    write(fs, "l_orb_desc", l_orb_desc);
-    write(fs, "r_orb_desc", r_orb_desc);
-    write(fs, "l_sift_desc", l_sift_desc);
-    write(fs, "r_sift_desc", r_sift_desc);
+    write(fs, "l_desc", l_desc);
+    write(fs, "r_desc", r_desc);
+    write(fs, "world_points", world_points);
+
     fs.release();
 
     cv::imwrite(params_.outdir + "/" + IMG_DIR + "/" + ss.str() + ".jpg", l_img);
