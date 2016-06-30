@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 
 #include "frame_to_frame.h"
+#include "adjuster.h"
 
 namespace uware
 {
@@ -81,8 +82,7 @@ namespace uware
 
 
         // TODO: Use initial guest!!!
-
-        bool valid_sim3 = calcSim3(id, output);
+        bool valid_sim3 = calcCeres(id, output);
 
         // 3D Registration
         vector<uint> salient_indices;
@@ -207,10 +207,11 @@ namespace uware
     return valid_icp;
   }
 
-  bool FrameToFrame::calcSim3(int id, tf::Transform& output)
-  {
-    output.setIdentity();
-
+  bool FrameToFrame::loadDescriptors(int id,
+                                     cv::Mat& prev_desc,
+                                     cv::Mat& curr_desc,
+                                     vector<cv::KeyPoint>& prev_kp,
+                                     vector<cv::Point3d>& curr_wp) {
     // Load descriptors
     cv::FileStorage prev_fs, curr_fs;
     stringstream id_prev, id_curr;
@@ -222,9 +223,6 @@ namespace uware
     if (!prev_fs.isOpened()) return false;
     curr_fs.open(curr_img_data, cv::FileStorage::READ);
     if (!curr_fs.isOpened()) return false;
-    cv::Mat prev_desc, curr_desc;
-    vector<cv::KeyPoint> prev_kp;
-    vector<cv::Point3d> curr_wp;
     cv::FileNode prev_kp_node = prev_fs["l_kp"];
     read(prev_kp_node, prev_kp);
     prev_fs["l_desc"]       >> prev_desc;
@@ -232,6 +230,17 @@ namespace uware
     curr_fs["world_points"] >> curr_wp;
     prev_fs.release();
     curr_fs.release();
+  }
+
+  bool FrameToFrame::calcSim3(int id, tf::Transform& output)
+  {
+    output.setIdentity();
+
+    // Load descriptors
+    cv::Mat prev_desc, curr_desc;
+    vector<cv::KeyPoint> prev_kp;
+    vector<cv::Point3d> curr_wp;
+    loadDescriptors(id, prev_desc, curr_desc, prev_kp, curr_wp);
 
     if (params_.show_num_of_kp)
       ROS_INFO_STREAM("[Reconstruction]: Current kps: " << curr_desc.rows << ". Previous kps: " << prev_desc.rows);
@@ -281,6 +290,74 @@ namespace uware
           output = Utils::buildTransformation(rvec, tvec);
           return true;
         }
+      }
+    }
+
+    return false;
+  }
+
+  bool FrameToFrame::calcCeres(int id, tf::Transform& output)
+  {
+    output.setIdentity();
+
+    // Load descriptors
+    cv::Mat prev_desc, curr_desc;
+    vector<cv::KeyPoint> prev_kp;
+    vector<cv::Point3d> curr_wp;
+    loadDescriptors(id, prev_desc, curr_desc, prev_kp, curr_wp);
+
+    if (params_.show_num_of_kp)
+      ROS_INFO_STREAM("[Reconstruction]: Current kps: " << curr_desc.rows << ". Previous kps: " << prev_desc.rows);
+    if (prev_desc.rows < params_.min_desc_matches || curr_desc.rows < params_.min_desc_matches)
+    {
+      if (params_.show_generic_logs)
+        ROS_INFO_STREAM("[Reconstruction]: Low number of keypoints: " <<
+                        prev_desc.rows << "(previous) and " << curr_desc.rows <<
+                        "(current). Threshold (min_desc_matches): " << params_.min_desc_matches);
+      return false;
+    }
+    else
+    {
+      // Descriptor matching
+      vector<cv::DMatch> matches;
+      Utils::ratioMatching(prev_desc, curr_desc, params_.desc_matching_th, matches);
+      if ((int)matches.size() < params_.min_desc_matches)
+      {
+        if (params_.show_generic_logs)
+          ROS_INFO_STREAM("[Reconstruction]: Not enough matches for Sim3: " <<
+                          matches.size() << " (threshold: " << params_.min_desc_matches << ").");
+        return false;
+      }
+      else
+      {
+        // Build the matches vector
+        Camera c(id);
+        for(uint i=0; i<matches.size(); i++)
+        {
+          Eigen::Vector3d kp(prev_kp[matches[i].queryIdx].pt.x,
+                             prev_kp[matches[i].queryIdx].pt.y,
+                             1.0);
+          Eigen::Vector3d wp(curr_wp[matches[i].trainIdx].x,
+                             curr_wp[matches[i].trainIdx].y,
+                             curr_wp[matches[i].trainIdx].z);
+          c.addCorrespondence(kp, wp);
+        }
+
+        std::vector<Camera> camera_vector;
+        camera_vector.push_back(c);
+
+        // Estimate the motion
+        Adjuster adj;
+        adj.adjust(camera_vector);
+
+        Eigen::Quaterniond q = camera_vector[0].q;
+        Eigen::Vector3d t = camera_vector[0].t;
+        tf::Quaternion q_tf(q(1), q(2), q(3), q(0);
+        tf::Vector3 origin(t(0), t(1), t(2));
+        output.setOrigin(origin);
+        output.setRotation(q_tf);
+        // I don't have any way to check inliers now...
+        return true;
       }
     }
 

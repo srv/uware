@@ -129,6 +129,7 @@ protected:
    * \param output estimated transform
    */
   bool calcSim3(int id, tf::Transform& output);
+  bool calcCeres(int id, tf::Transform& output);
 
 private:
 

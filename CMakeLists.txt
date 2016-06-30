@@ -44,7 +44,10 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PkgConfig)
 
 # Dependencies - Eigen:
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+# Dependencies - Ceres:
+find_package(Ceres REQUIRED)
 
 # Dependencies - PCL:
 find_package(PCL REQUIRED)
@@ -58,6 +61,7 @@ catkin_package()
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${Ceres_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
 
@@ -73,8 +77,10 @@ target_link_libraries(preprocess
 # Reconstruction
 add_executable(reconstruction
   src/nodes/reconstruction_node.cpp
-  src/frame_to_frame.cpp)
+  src/frame_to_frame.cpp
+  src/adjuster.cpp)
 target_link_libraries(reconstruction
-  ${eigen_LIBRARIES}
+  ${Eigen_LIBRARIES}
+  ${Ceres_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${catkin_LIBRARIES})
