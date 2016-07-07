@@ -21,6 +21,9 @@ namespace uware
 
   static const string OMAP_FILE = "map.txt";
 
+  static const string F2F_POSES = "frame2frame_poses.txt";
+  static const string F2F_EDGES = "frame2frame_edges.txt";
+
 
 } // namespace
 

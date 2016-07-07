@@ -4,19 +4,21 @@
 
 namespace uware
 {
-  FrameToFrame::FrameToFrame() : first_(true), prev_cloud_(new PointCloud) { }
+  FrameToFrame::FrameToFrame(Registration* reg) : first_(true), reg_(reg) { }
 
-  void FrameToFrame::compute()
+  void FrameToFrame::compute(vector<PoseInfo>& poses, vector<EdgeInfo>& edges)
   {
     // Create directories
     if (!createDirs()) return;
 
     // Read poses
-    Utils::readPoses(params_.indir + "/" + ODOM_FILE, cloud_poses_);
+    Utils::readPoses(params_.indir + "/" + ODOM_FILE, odom_cloud_poses_);
+    Utils::readPoses(params_.indir + "/" + OMAP_FILE, map_cloud_poses_);
 
     // Read camera matrix
+    cv::Mat camera_matrix;
     cv::FileStorage fs(params_.indir + "/" + CAMERA_MATRIX_FILE, cv::FileStorage::READ);
-    fs["camera_matrix"] >> camera_matrix_;
+    fs["camera_matrix"] >> camera_matrix;
     fs.release();
 
     // Sort directory of pointclouds by name
@@ -45,60 +47,65 @@ namespace uware
         ROS_INFO_STREAM("[Reconstruction]: Processing cloud: " << filename);
 
         // Search current pointcloud into the cloud poses
-        uint id = getCloudPoseId(rawname, cloud_poses_);
+        uint id = getCloudPoseId(rawname, odom_cloud_poses_);
         if (id < 0)
         {
-          ROS_ERROR_STREAM("[Reconstruction]: Impossible to find the id into the cloud_poses_ array for file: " << filename);
+          ROS_ERROR_STREAM("[Reconstruction]: Impossible to find the id into the odom_cloud_poses_ array for file: " << filename);
           break;
-        }
-
-        // Load the pointcloud
-        PointCloud::Ptr in_cloud(new PointCloud);
-        if (pcl::io::loadPCDFile<Point> (filepath, *in_cloud) == -1)
-        {
-          ROS_WARN_STREAM("[Reconstruction]: Couldn't read the file: " << filename);
-          it++;
-          continue;
         }
 
         // First iteration
         if (first_)
         {
-          pcl::copyPointCloud(*in_cloud, *prev_cloud_);
-
-          vector<uint> salient_indices;
-          Utils::getCloudSalientIndices(prev_cloud_, salient_indices, params_.z_diff_th);
-          prev_cloud_salient_ids_ = salient_indices.size() * 100.0 / prev_cloud_->size();
-          prev_rawname_ = rawname;
+          prev_pose_ = map_cloud_poses_[id].second;
+          PoseInfo p(rawname, prev_pose_);
+          poses_result_.push_back(p);
+          saveResult();
 
           first_ = false;
           it++;
           continue;
         }
 
-        // Visual registration
-        tf::Transform output;
+        // Init
+        bool valid_sim3 = false;
+        bool valid_icp = false;
+        int sim3_inliers = 0;
+        double icp_score = 0.0;
 
 
-        // TODO: Use initial guest!!!
+        // Estimated movement by odometry
+        tf::Transform tf_prev = odom_cloud_poses_[id-1].second;
+        tf::Transform tf_curr = odom_cloud_poses_[id].second;
+        tf::Transform prev2curr = tf_prev.inverse() * tf_curr;
 
-        bool valid_sim3 = calcSim3(id, output);
+        // Registration
+        tf::Transform out;
+        reg_->pipeline(id-1, id, prev2curr, valid_sim3, valid_icp, sim3_inliers, icp_score, camera_matrix, out);
 
-        // 3D Registration
-        vector<uint> salient_indices;
-        bool valid_icp = registration(id, prev_cloud_, in_cloud, salient_indices);
+        // Switch between registration and map tf
+        tf::Transform curr_pose;
+        if (valid_sim3 || valid_icp)
+          curr_pose = prev_pose_ * out;
+        else
+          curr_pose = map_cloud_poses_[id].second;
+
+        // Save the result
+        EdgeInfo e(Utils::id2str(id-1), rawname, valid_sim3, valid_icp, sim3_inliers, icp_score);
+        edges_result_.push_back(e);
+        PoseInfo p(rawname, curr_pose);
+        poses_result_.push_back(p);
+        saveResult();
 
         // Copy
-        pcl::copyPointCloud(*in_cloud, *prev_cloud_);
-        prev_cloud_salient_ids_ = salient_indices.size() * 100.0 / prev_cloud_->size();
-        prev_rawname_ = rawname;
+        prev_pose_ = curr_pose;
 
       }
       // Next directory entry
       it++;
-
     }
-
+    poses = poses_result_;
+    edges = edges_result_;
   }
 
   bool FrameToFrame::createDirs()
@@ -109,182 +116,64 @@ namespace uware
     if (!Utils::createDir(params_.outdir + "/" + PAIRED_CLOUDS_DIR))
       return false;
 
+    // Remove files
+    string poses_file   = params_.outdir + "/" + F2F_POSES;
+    remove(poses_file.c_str());
+    string edges_file   = params_.outdir + "/" + F2F_EDGES;
+    remove(edges_file.c_str());
+
     return true;
   }
 
-  int FrameToFrame::getCloudPoseId(string rawname, vector< pair<string, tf::Transform> > cloud_poses_)
+  int FrameToFrame::getCloudPoseId(string rawname, vector< pair<string, tf::Transform> > odom_cloud_poses_)
   {
-    for (uint i=0; i<cloud_poses_.size(); i++)
+    for (uint i=0; i<odom_cloud_poses_.size(); i++)
     {
-      if (cloud_poses_[i].first == rawname)
+      if (odom_cloud_poses_[i].first == rawname)
         return i;
     }
     return -1;
   }
 
-  bool FrameToFrame::pairAlign(PointCloud::Ptr src,
-                               PointCloud::Ptr tgt,
-                               tf::Transform &output)
+  void FrameToFrame::saveResult()
   {
-    PointCloud::Ptr aligned (new PointCloud);
-    IterativeClosestPoint icp;
-    icp.setMaxCorrespondenceDistance(0.07);
-    icp.setRANSACOutlierRejectionThreshold(0.005);
-    icp.setTransformationEpsilon(0.00001);
-    icp.setEuclideanFitnessEpsilon(0.0001);
-    icp.setMaximumIterations(200);
-    icp.setInputSource(src);
-    icp.setInputTarget(tgt);
-    icp.align(*aligned);
-    double score = icp.getFitnessScore();
-
-    if (params_.show_icp_score)
-      ROS_INFO_STREAM("[Reconstruction]: ICP fitness score: " << score);
-
-    // The transform
-    output = Utils::matrix4fToTf(icp.getFinalTransformation());
-    if (params_.show_icp_tf)
+    if (poses_result_.size()>0)
     {
-      ROS_INFO_STREAM("[Reconstruction]: ICP correction: " << output.getOrigin().x() <<
-                                                      ", " << output.getOrigin().y() <<
-                                                      ", " << output.getOrigin().z());
+      int idx = (int)poses_result_.size()-1;
+      string result_file = params_.outdir + "/" + F2F_POSES;
+      fstream f_res(result_file.c_str(), ios::out | ios::app);
+
+      f_res << fixed <<
+      setprecision(6) <<
+      poses_result_[idx].name << "," <<
+      poses_result_[idx].pose.getOrigin().x() << "," <<
+      poses_result_[idx].pose.getOrigin().y() << "," <<
+      poses_result_[idx].pose.getOrigin().z() << "," <<
+      poses_result_[idx].pose.getRotation().x() << "," <<
+      poses_result_[idx].pose.getRotation().y() << "," <<
+      poses_result_[idx].pose.getRotation().z() << "," <<
+      poses_result_[idx].pose.getRotation().w() <<  endl;
+
+      f_res.close();
     }
 
-    // Return valid or not
-    return ( icp.hasConverged() && (score < params_.max_icp_fitness_score) );
-  }
-
-  bool FrameToFrame::registration(int id, PointCloud::Ptr prev_cloud, PointCloud::Ptr curr_cloud, vector<uint>& salient_indices)
-  {
-    // Determine if current and previous pointcloud are useful for registration
-    salient_indices.clear();
-    Utils::getCloudSalientIndices(curr_cloud, salient_indices, params_.z_diff_th);
-    double curr_salient_ids = salient_indices.size() * 100.0 / curr_cloud->size();
-
-    if (params_.show_salient_ids)
-      ROS_INFO_STREAM("[Reconstruction]: Salient indices for " << cloud_poses_[id].first << ".pcd is: " << curr_salient_ids << "\%");
-
-    bool valid_icp = false;
-    if (prev_cloud_salient_ids_ > params_.min_salient_ids &&
-        curr_salient_ids > params_.min_salient_ids)
+    if (edges_result_.size()>0)
     {
-      // Frame to frame registration
-      ROS_INFO_STREAM("[Reconstruction]: " << cloud_poses_[id].first << ".pcd is useful for registration.");
-      ROS_INFO("[Reconstruction]: Aligning clouds...");
+      int idx = (int)edges_result_.size()-1;
+      string result_file = params_.outdir + "/" + F2F_EDGES;
+      fstream f_res(result_file.c_str(), ios::out | ios::app);
 
-      // Transform current cloud according to slam pose
-      tf::Transform tf_prev = cloud_poses_[id-1].second;
-      tf::Transform tf_curr = cloud_poses_[id].second;
-      tf::Transform tf_01 = tf_curr.inverse() * tf_prev;
-      Eigen::Affine3d tf_01_eigen;
-      transformTFToEigen(tf_01, tf_01_eigen);
-      PointCloud::Ptr prev_cloud_moved(new PointCloud);
-      pcl::transformPointCloud(*prev_cloud_, *prev_cloud_moved, tf_01_eigen);
+      f_res << fixed <<
+      setprecision(6) <<
+      edges_result_[idx].name_a << "," <<
+      edges_result_[idx].name_b << "," <<
+      edges_result_[idx].valid_sim3 << "," <<
+      edges_result_[idx].valid_icp << "," <<
+      edges_result_[idx].sim3_inliers << "," <<
+      edges_result_[idx].icp_score <<  endl;
 
-      // Pair align
-      tf::Transform correction;
-      valid_icp = pairAlign(prev_cloud_moved, curr_cloud, correction);
-      if (valid_icp && params_.save_icp_clouds)
-      {
-        // Make the new directory
-        stringstream ss;
-        ss << setfill('0') << setw(6) << (id-1) << "_to_" << setfill('0') << setw(6) << (id);
-        string paired_dir = params_.outdir + "/" + PAIRED_CLOUDS_DIR + "/" + ss.str();
-        if (Utils::createDir(paired_dir))
-        {
-          // Move and save
-          Eigen::Affine3d correction_eigen;
-          transformTFToEigen(correction, correction_eigen);
-          pcl::transformPointCloud(*prev_cloud_moved, *prev_cloud_moved, correction_eigen);
-
-          string pc0_filename = paired_dir + "/" + cloud_poses_[id].first + ".pcd";
-          pcl::io::savePCDFileBinary(pc0_filename, *curr_cloud);
-          string pc1_filename = paired_dir + "/" + prev_rawname_ + ".pcd";
-          pcl::io::savePCDFileBinary(pc1_filename, *prev_cloud_moved);
-        }
-      }
+      f_res.close();
     }
-    return valid_icp;
-  }
-
-  bool FrameToFrame::calcSim3(int id, tf::Transform& output)
-  {
-    output.setIdentity();
-
-    // Load descriptors
-    cv::FileStorage prev_fs, curr_fs;
-    stringstream id_prev, id_curr;
-    id_prev << setfill('0') << setw(6) << id-1;
-    id_curr << setfill('0') << setw(6) << id;
-    string prev_img_data = params_.indir + "/" + IMG_DIR + "/" + id_prev.str() + ".yaml";
-    string curr_img_data = params_.indir + "/" + IMG_DIR + "/" + id_curr.str() + ".yaml";
-    prev_fs.open(prev_img_data, cv::FileStorage::READ);
-    if (!prev_fs.isOpened()) return false;
-    curr_fs.open(curr_img_data, cv::FileStorage::READ);
-    if (!curr_fs.isOpened()) return false;
-    cv::Mat prev_desc, curr_desc;
-    vector<cv::KeyPoint> prev_kp;
-    vector<cv::Point3d> curr_wp;
-    cv::FileNode prev_kp_node = prev_fs["l_kp"];
-    read(prev_kp_node, prev_kp);
-    prev_fs["l_desc"]       >> prev_desc;
-    curr_fs["l_desc"]       >> curr_desc;
-    curr_fs["world_points"] >> curr_wp;
-    prev_fs.release();
-    curr_fs.release();
-
-    if (params_.show_num_of_kp)
-      ROS_INFO_STREAM("[Reconstruction]: Current kps: " << curr_desc.rows << ". Previous kps: " << prev_desc.rows);
-    if (prev_desc.rows < params_.min_desc_matches || curr_desc.rows < params_.min_desc_matches)
-    {
-      if (params_.show_generic_logs)
-        ROS_INFO_STREAM("[Reconstruction]: Low number of keypoints: " <<
-                        prev_desc.rows << "(previous) and " << curr_desc.rows <<
-                        "(current). Threshold (min_desc_matches): " << params_.min_desc_matches);
-      return false;
-    }
-    else
-    {
-      // Descriptor matching
-      vector<cv::DMatch> matches;
-      Utils::ratioMatching(prev_desc, curr_desc, params_.desc_matching_th, matches);
-      if ((int)matches.size() < params_.min_desc_matches)
-      {
-        if (params_.show_generic_logs)
-          ROS_INFO_STREAM("[Reconstruction]: Not enough matches for Sim3: " <<
-                          matches.size() << " (threshold: " << params_.min_desc_matches << ").");
-        return false;
-      }
-      else
-      {
-        // Build the matches vector
-        vector<cv::Point2f> matched_kp_prev;
-        vector<cv::Point3f> matched_3d_curr;
-        for(uint i=0; i<matches.size(); i++)
-        {
-          matched_kp_prev.push_back(prev_kp[matches[i].queryIdx].pt);
-          matched_3d_curr.push_back(curr_wp[matches[i].trainIdx]);
-        }
-
-        // Estimate the motion
-        vector<int> inliers;
-        cv::Mat rvec, tvec;
-        cv::solvePnPRansac(matched_3d_curr, matched_kp_prev, camera_matrix_,
-                           cv::Mat(), rvec, tvec, false,
-                           100, params_.reproj_err, 100, inliers);
-
-        if (params_.show_generic_logs)
-          ROS_INFO_STREAM("[Reconstruction]: Sim3 inliers: " << inliers.size());
-
-        if ((int)inliers.size() >= params_.min_inliers)
-        {
-          output = Utils::buildTransformation(rvec, tvec);
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 
 

@@ -9,16 +9,18 @@
 #include <pcl_ros/transforms.h>
 #include <pcl/point_types.h>
 #include <pcl/common/common.h>
-#include <pcl/registration/icp.h>
-#include <pcl_ros/transforms.h>
+
+#include <opencv2/opencv.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <sim3solver/Sim3Solver.h>
 
 #include "constants.h"
+#include "edge_info.h"
+#include "pose_info.h"
 #include "utils.h"
+#include "registration.h"
 
 using namespace std;
 using namespace boost;
@@ -26,7 +28,6 @@ namespace fs  = filesystem;
 
 typedef pcl::PointXYZRGB          Point;
 typedef pcl::PointCloud<Point>    PointCloud;
-typedef pcl::IterativeClosestPoint<Point, Point> IterativeClosestPoint;
 
 namespace uware
 {
@@ -40,42 +41,16 @@ public:
   {
     string outdir;                  //!> Output directory
     string indir;                   //!> Input directory (the output of pre-process)
-    double z_diff_th;               //!> The z difference threshold to consider the existence of 3D structure (in percentage respect to the mean z)
-    double min_salient_ids;         //!> Minimum percentage of salient indices to consider a pointcloud valid for registration
-    double max_icp_fitness_score;   //!> Maximum icp fitness score to consider a valid icp registration
-    double max_reg_err;             //!> Maximum registration error between odometry and ICP or Sim3 (euclidean distance in meters)
-    double desc_matching_th;        //!> Descriptor matching threshold
-    int min_desc_matches;           //!> Minimum number of descriptor matches to proceed with the Sim3
-    double reproj_err;              //!> Sim3 reprojection error
-    int min_inliers;                //!> Minimum number of inliers to consider a Sim3 valid
 
     // Debug
     bool show_generic_logs;         //!> Show generic logs
-    bool show_salient_ids;          //!> Show the salient indices percentage
-    bool show_icp_score;            //!> Show the icp fitness score
-    bool show_icp_tf;               //!> Show the icp output transformation
-    bool save_icp_clouds;           //!> Save paired clouds
-    bool show_num_of_kp;            //!> Show the number of keypoints
 
     // Default settings
     Params () {
       outdir                  = "";
       indir                   = "";
-      z_diff_th               = 15.0;
-      min_salient_ids         = 15.0;
-      max_icp_fitness_score   = 0.1;
-      max_reg_err             = 0.3;
-      desc_matching_th        = 0.7;
-      min_desc_matches        = 50;
-      reproj_err              = 4.0;
-      min_inliers             = 20;
 
       show_generic_logs       = false;
-      show_salient_ids        = false;
-      show_icp_score          = false;
-      show_icp_tf             = false;
-      save_icp_clouds         = false;
-      show_num_of_kp          = false;
     }
   };
 
@@ -85,12 +60,14 @@ public:
   inline void setParams(const Params& params){params_ = params;}
 
   /** \brief Class constructor
+   * \param Pointer to a registration object
    */
-  FrameToFrame();
+  FrameToFrame(Registration* reg);
 
   /** \brief Compute the frame to frame tf
+   * \param Output vector with the corrected cloud poses
    */
-  void compute();
+  void compute(vector<PoseInfo>& poses, vector<EdgeInfo>& edges);
 
 protected:
 
@@ -106,29 +83,9 @@ protected:
    */
   int getCloudPoseId(string rawname, vector< pair<string, tf::Transform> > cloud_poses);
 
-  /** \brief Pointcloud to pointcloud ICP registration
-   * @return true if icp is valid
-   * \param input source cloud
-   * \param input target cloud
-   * \param output transformation to align the pointclouds
+  /** \brief Save result to file
    */
-  bool pairAlign(PointCloud::Ptr src, PointCloud::Ptr tgt, tf::Transform &output);
-
-  /** \brief Performs a 3D registration
-   * @return true if registration is valid
-   * \param id
-   * \param previous pointcloud
-   * \param current pointcloud
-   * \param output vector of salient indices
-   */
-  bool registration(int id, PointCloud::Ptr prev_cloud, PointCloud::Ptr curr_cloud, vector<uint>& salient_indices);
-
-  /** \brief Performs a visual registration
-   * @return true if registration is valid
-   * \param id
-   * \param output estimated transform
-   */
-  bool calcSim3(int id, tf::Transform& output);
+  void saveResult();
 
 private:
 
@@ -136,13 +93,17 @@ private:
 
   bool first_; //!> First iteration
 
-  cv::Mat camera_matrix_; //!> Camera matrix
+  vector< pair<string, tf::Transform> > odom_cloud_poses_; //!> Array of odom cloud of poses
 
-  vector< pair<string, tf::Transform> > cloud_poses_; //!> Array of cloud of poses
+  vector< pair<string, tf::Transform> > map_cloud_poses_; //!> Array of map cloud of poses
 
-  PointCloud::Ptr prev_cloud_; //!> Previous pointcloud
-  double prev_cloud_salient_ids_; //!> Percentage of salient indices on the previous cloud
-  string prev_rawname_; //!> Previous rawname
+  tf::Transform prev_pose_; //!> Previous estimated robot pose
+
+  vector<PoseInfo> poses_result_; //!> Output vector of corrected cloud poses
+
+  vector<EdgeInfo> edges_result_; //!> Edges information
+
+  Registration* reg_; //!> Registration class
 
 };
 

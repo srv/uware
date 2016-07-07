@@ -7,9 +7,12 @@
 #include <pcl/common/common.h>
 #include <pcl_ros/point_cloud.h>
 
+#include <opencv2/opencv.hpp>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
+using namespace std;
 using namespace boost;
 namespace fs  = filesystem;
 
@@ -169,7 +172,7 @@ public:
     }
   }
 
-  static tf::Transform buildTransformation(cv::Mat rvec, cv::Mat tvec)
+  static tf::Transform solvePnP2tf(cv::Mat rvec, cv::Mat tvec)
   {
     if (rvec.empty() || tvec.empty())
       return tf::Transform();
@@ -184,6 +187,66 @@ public:
         tvec.at<double>(2, 0));
 
     return tf::Transform(quaternion, translation);
+  }
+
+  static void tf2SolvePnP(tf::Transform in, cv::Mat& rvec, cv::Mat& tvec)
+  {
+    // Convert rotation
+    tf::Matrix3x3 rot = in.getBasis();
+    cv::Mat tmp_r(3,3, CV_64FC1);
+    rvec = cv::Mat(3,1, CV_64FC1);
+    tmp_r.at<double>(0,0) = rot[0][0];
+    tmp_r.at<double>(0,1) = rot[0][1];
+    tmp_r.at<double>(0,2) = rot[0][2];
+    tmp_r.at<double>(1,0) = rot[1][0];
+    tmp_r.at<double>(1,1) = rot[1][1];
+    tmp_r.at<double>(1,2) = rot[1][2];
+    tmp_r.at<double>(2,0) = rot[2][0];
+    tmp_r.at<double>(2,1) = rot[2][1];
+    tmp_r.at<double>(2,2) = rot[2][2];
+    cv::Rodrigues(tmp_r, rvec);
+
+    // Convert translation vector
+    tvec = cv::Mat(3,1, CV_64FC1);
+    tvec.at<double>(0, 0) = in.getOrigin().x();
+    tvec.at<double>(1, 0) = in.getOrigin().y();
+    tvec.at<double>(2, 0) = in.getOrigin().z();
+  }
+
+  static double tfDist(tf::Transform a, tf::Transform b, bool xy=false)
+  {
+    if (xy)
+    {
+      return sqrt((a.getOrigin().x() - b.getOrigin().x()) * (a.getOrigin().x() - b.getOrigin().x()) +
+                  (a.getOrigin().y() - b.getOrigin().y()) * (a.getOrigin().y() - b.getOrigin().y()));
+    }
+    else
+    {
+      return sqrt((a.getOrigin().x() - b.getOrigin().x()) * (a.getOrigin().x() - b.getOrigin().x()) +
+                  (a.getOrigin().y() - b.getOrigin().y()) * (a.getOrigin().y() - b.getOrigin().y()) +
+                  (a.getOrigin().z() - b.getOrigin().z()) * (a.getOrigin().z() - b.getOrigin().z()));
+    }
+  }
+
+  /** \brief Sort 2 pairs by size
+   * @return true if pair 1 is smaller than pair 2
+   * \param pair 1
+   * \param pair 2
+   */
+  static bool sortByDistance(const pair<uint, double> a, const pair<uint, double> b)
+  {
+    return (a.second < b.second);
+  }
+
+  /** \brief Convert id to string
+   * @return 6 digits id string
+   * \param input id
+   */
+  static string id2str(int id)
+  {
+    stringstream id_ss;
+    id_ss << setfill('0') << setw(6) << id;
+    return id_ss.str();
   }
 
 

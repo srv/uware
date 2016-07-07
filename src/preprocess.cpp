@@ -105,9 +105,7 @@ namespace uware
       double stamp = l_img_msg->header.stamp.toSec();
 
       // Store cloud
-      stringstream ss;
-      ss << setfill('0') << setw(6) << id_;
-      string pc_filename = params_.outdir + "/" + PC_DIR + "/" + ss.str() + ".pcd";
+      string pc_filename = params_.outdir + "/" + PC_DIR + "/" + Utils::id2str(id_) + ".pcd";
       pcl::io::savePCDFileBinary(pc_filename, *pcl_cloud);
 
       // Store odometry
@@ -123,8 +121,8 @@ namespace uware
       cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
       cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
 
-      cv::FileStorage fs(params_.outdir + "/homographies/" + ss.str() + ".yaml", cv::FileStorage::WRITE);
-      write(fs, "filename", "/tmp/mosaicing/images/" + ss.str() + ".jpg");
+      cv::FileStorage fs(params_.outdir + "/homographies/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
+      write(fs, "filename", "/tmp/mosaicing/images/" + Utils::id2str(id_) + ".jpg");
       write(fs, "HO", HO);
       write(fs, "HM", HM);
       fs.release();
@@ -187,13 +185,9 @@ namespace uware
     string odom_file = params_.outdir + "/" + filename;
     fstream f_odom(odom_file.c_str(), ios::out | ios::app);
 
-    // Convert id to 6 digits
-    stringstream ss;
-    ss << setfill('0') << setw(6) << id;
-
     f_odom << fixed <<
     setprecision(6) <<
-    ss.str() << "," <<
+    Utils::id2str(id) << "," <<
     stamp << "," <<
 
     odometry.getOrigin().x() << "," <<
@@ -221,9 +215,7 @@ namespace uware
     frame.GetLeftRightMatchings(l_kp, r_kp, l_desc, r_desc, world_points, stereo_camera_model_, params_.epipolar_th);
 
     // Store
-    stringstream ss;
-    ss << setfill('0') << setw(6) << id_;
-    cv::FileStorage fs(params_.outdir + "/" + IMG_DIR + "/" + ss.str() + ".yaml", cv::FileStorage::WRITE);
+    cv::FileStorage fs(params_.outdir + "/" + IMG_DIR + "/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
     write(fs, "l_kp", l_kp);
     write(fs, "r_kp", r_kp);
     write(fs, "l_desc", l_desc);
@@ -232,7 +224,7 @@ namespace uware
 
     fs.release();
 
-    cv::imwrite(params_.outdir + "/" + IMG_DIR + "/" + ss.str() + ".jpg", l_img);
+    cv::imwrite(params_.outdir + "/" + IMG_DIR + "/" + Utils::id2str(id_) + ".jpg", l_img);
 
     return l_kp.size();
   }

@@ -36,8 +36,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   tf_conversions
   libhaloc
-  orb_utils
-  sim3solver)
+  orb_utils)
 
 ####################################################
 # Dependencies:
@@ -53,13 +52,23 @@ find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
 link_directories(${OpenCV_LIBRARY_DIRS})
 
+# Dependencies - Suitesparse:
+find_package(SuiteSparse REQUIRED)
+
+# Dependencies - G2O:
+# Use script to find g2o. If it's not installed, set G2O_INCLUDE_DIRS manually
+# using -DG2O_INCLUDE_DIRS.
+find_package(G2O REQUIRED)
+
 catkin_package()
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
-  ${PCL_INCLUDE_DIRS})
+  ${PCL_INCLUDE_DIRS}
+  ${SUITESPARSE_INCLUDE_DIRS}
+  ${G2O_INCLUDE_DIRS})
 
 # Pre-process
 add_executable(preprocess
@@ -73,8 +82,14 @@ target_link_libraries(preprocess
 # Reconstruction
 add_executable(reconstruction
   src/nodes/reconstruction_node.cpp
-  src/frame_to_frame.cpp)
+  src/registration.cpp
+  src/frame_to_frame.cpp
+  src/loop_closing.cpp
+  src/graph.cpp)
 target_link_libraries(reconstruction
   ${eigen_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  ${catkin_LIBRARIES})
+  ${catkin_LIBRARIES}
+  ${SUITESPARSE_LIBRARIES}
+  ${G2O_LIBRARIES}
+  cholmod)

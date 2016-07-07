@@ -25,7 +25,6 @@
   <build_depend>cmake_modules</build_depend>
   <build_depend>tf_conversions</build_depend>
   <build_depend>orb_utils</build_depend>
-  <build_depend>sim3solver</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>nav_msgs</run_depend>
@@ -41,6 +40,5 @@
   <run_depend>pcl_ros</run_depend>
   <run_depend>tf_conversions</run_depend>
   <run_depend>orb_utils</run_depend>
-  <run_depend>sim3solver</run_depend>
 
 </package>
