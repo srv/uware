@@ -41,6 +41,8 @@ public:
   {
     string outdir;                  //!> Output directory
     string indir;                   //!> Input directory (the output of pre-process)
+    int start_img_name;             //!> Image name at which the process will start
+    int stop_img_name;              //!> Image name at which the process will stop
 
     // Debug
     bool show_generic_logs;         //!> Show generic logs
@@ -49,6 +51,8 @@ public:
     Params () {
       outdir                  = "";
       indir                   = "";
+      start_img_name          = -1;
+      stop_img_name           = -1;
 
       show_generic_logs       = false;
     }

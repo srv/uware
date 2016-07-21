@@ -66,7 +66,7 @@ public:
       min_cloud_size    = 100;
       store_distance    = 0.5;
       use_2d_distance   = false;
-      voxel_resolution  = 0.02;
+      voxel_resolution  = 0.01;
       epipolar_th       = 1.5;
     }
   };

@@ -249,6 +249,40 @@ public:
     return id_ss.str();
   }
 
+  /** \brief convert a tf::transform to Eigen::Isometry3d
+   * @return Eigen::Isometry3d matrix
+   * \param in of type tf::transform
+   */
+  static Eigen::Isometry3d tfToIsometry(tf::Transform in)
+  {
+    tf::Vector3 t_in = in.getOrigin();
+    tf::Quaternion q_in = in.getRotation();
+    Eigen::Vector3d t_out(t_in.x(), t_in.y(), t_in.z());
+    Eigen::Quaterniond q_out;
+    q_out.setIdentity();
+    q_out.x() = q_in.x();
+    q_out.y() = q_in.y();
+    q_out.z() = q_in.z();
+    q_out.w() = q_in.w();
+    Eigen::Isometry3d out = (Eigen::Isometry3d)q_out;
+    out.translation() = t_out;
+    return out;
+  }
+
+  /** \brief convert a Eigen::Isometry3d to tf::transform
+   * @return tf::transform matrix
+   * \param in of type Eigen::Isometry3d
+   */
+  static tf::Transform isometryToTf(Eigen::Isometry3d in)
+  {
+    Eigen::Vector3d t_in = in.translation();
+    Eigen::Quaterniond q_in = (Eigen::Quaterniond)in.rotation();
+    tf::Vector3 t_out(t_in.x(), t_in.y(), t_in.z());
+    tf::Quaternion q_out(q_in.x(), q_in.y(), q_in.z(), q_in.w());
+    tf::Transform out(q_out, t_out);
+    return out;
+  }
+
 
 };
 

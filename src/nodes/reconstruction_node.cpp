@@ -7,7 +7,7 @@
 #include "registration.h"
 #include "frame_to_frame.h"
 #include "loop_closing.h"
-#include "graph.h"
+#include "build3d.h"
 
 using namespace uware;
 
@@ -21,11 +21,14 @@ int main(int argc, char **argv)
   ros::NodeHandle nhp("~");
 
   // Read parameters
-  Registration::Params reg_params;
   FrameToFrame::Params ftf_params;
   LoopClosing::Params lc_params;
+  Registration::Params reg_params;
+  Build3D::Params b3d_params;
   nhp.param("preprocess_dir",     ftf_params.indir,             ros::package::getPath("uware") + "/" + PREPROCESS_DIR);
   nhp.param("outdir",             ftf_params.outdir,            ros::package::getPath("uware") + "/" + RECONSTRUCTION_DIR);
+  nhp.param("start_img_name",     ftf_params.start_img_name,    -1);
+  nhp.param("stop_img_name",      ftf_params.stop_img_name,     -1);
   nhp.param("show_generic_logs",  ftf_params.show_generic_logs, false);
 
   nhp.param("preprocess_dir",     lc_params.indir,              ros::package::getPath("uware") + "/" + PREPROCESS_DIR);
@@ -47,12 +50,16 @@ int main(int argc, char **argv)
   nhp.param("show_generic_logs",  reg_params.show_generic_logs, false);
   nhp.param("save_icp_clouds",    reg_params.save_icp_clouds,   false);
 
+  nhp.param("preprocess_dir",     b3d_params.indir,             ros::package::getPath("uware") + "/" + PREPROCESS_DIR);
+  nhp.param("outdir",             b3d_params.outdir,            ros::package::getPath("uware") + "/" + RECONSTRUCTION_DIR);
+  nhp.param("outdir",             b3d_params.voxel_resolution,  0.01);
+
   Registration* registration = new Registration();
   registration->setParams(reg_params);
 
-  ROS_INFO("[Registration]: -----------------------------------------------------------");
-  ROS_INFO("[Registration]:                    FRAME TO FRAME                          ");
-  ROS_INFO("[Registration]: -----------------------------------------------------------");
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
+  ROS_INFO("[Reconstruction]:                    FRAME TO FRAME                          ");
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
 
   // Frame to frame registration
   FrameToFrame frame_to_frame(registration);
@@ -62,21 +69,28 @@ int main(int argc, char **argv)
   vector<EdgeInfo> edges;
   frame_to_frame.compute(poses, edges);
 
-  ROS_INFO("[Registration]: -----------------------------------------------------------");
-  ROS_INFO("[Registration]:                      LOOP CLOSING                          ");
-  ROS_INFO("[Registration]: -----------------------------------------------------------");
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
+  ROS_INFO("[Reconstruction]:                      LOOP CLOSING                          ");
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
 
   // Loop closing registration
   LoopClosing loop_closing(registration);
   loop_closing.setParams(lc_params);
   loop_closing.compute(poses, edges);
 
-  // Graph optimization
-  Graph graph;
-  graph.optimize(poses, edges);
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
+  ROS_INFO("[Reconstruction]:                        BUILD 3D                            ");
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
 
+  // Build 3D
+  Build3D build3d;
+  build3d.setParams(b3d_params);
+  build3d.build(poses);
 
-  ros::spin();
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
+  ROS_INFO("[Reconstruction]:                        FINISHED!                           ");
+  ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
+
   ros::shutdown();
 
   return 0;

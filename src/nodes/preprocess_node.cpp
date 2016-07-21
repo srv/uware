@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   nhp.param("min_cloud_size",   params.min_cloud_size,      100);
   nhp.param("store_distance",   params.store_distance,      0.5);
   nhp.param("use_2d_distance",  params.use_2d_distance,     false);
-  nhp.param("voxel_resolution", params.voxel_resolution,    0.02);
+  nhp.param("voxel_resolution", params.voxel_resolution,    0.01);
   nhp.param("epipolar_th",      params.epipolar_th,         1.5);
 
 

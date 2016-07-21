@@ -147,6 +147,7 @@ namespace uware
                               int& sim3_inliers,
                               double& icp_score,
                               const cv::Mat& camera_matrix,
+                              const bool & is_loop,
                               tf::Transform& out)
   {
     // Init edge information
@@ -186,10 +187,14 @@ namespace uware
       }
       else
       {
-        ROS_WARN_STREAM("[Registration]: Error between odometry and sim3 too large: " <<
+        ROS_WARN_STREAM("[Reconstruction]: Error between odometry and sim3 too large: " <<
                         err << "m. (Allowed: " << params_.max_reg_err << ").");
       }
     }
+
+    // When loop closing search, force a valid sim3 to proceed with icp
+    if (is_loop && !valid_sim3)
+      return;
 
     // Read pointclouds
     string filepath_src = params_.indir + "/" + PC_DIR + "/" + id_src_str + ".pcd";
@@ -198,12 +203,12 @@ namespace uware
     PointCloud::Ptr tgt_cloud(new PointCloud);
     if (pcl::io::loadPCDFile<Point> (filepath_src, *src_cloud) == -1)
     {
-      ROS_ERROR_STREAM("[Registration]: Pointcloud " << filepath_src << " does not exists!");
+      ROS_ERROR_STREAM("[Reconstruction]: Pointcloud " << filepath_src << " does not exists!");
       return;
     }
     if (pcl::io::loadPCDFile<Point> (filepath_tgt, *tgt_cloud) == -1)
     {
-      ROS_ERROR_STREAM("[Registration]: Pointcloud " << filepath_tgt << " does not exists!");
+      ROS_ERROR_STREAM("[Reconstruction]: Pointcloud " << filepath_tgt << " does not exists!");
       return;
     }
 
@@ -258,7 +263,7 @@ namespace uware
         }
         else
         {
-          ROS_WARN_STREAM("[Registration]: Error between odometry and icp too large: " <<
+          ROS_WARN_STREAM("[Reconstruction]: Error between odometry and icp too large: " <<
                           err << "m. (Allowed: " << params_.max_reg_err << ").");
         }
       }

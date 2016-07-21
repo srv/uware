@@ -44,6 +44,27 @@ namespace uware
         string filepath = params_.indir + "/" + PC_DIR + "/" + filename;
         int lastindex = filename.find_last_of(".");
         string rawname = filename.substr(0, lastindex);
+
+        // Handle start/stop limits
+        if (params_.start_img_name >= 0)
+        {
+          int current = lexical_cast<int>(rawname);
+          if (current < params_.start_img_name)
+          {
+            it++;
+            continue;
+          }
+        }
+        if (params_.stop_img_name >= 0)
+        {
+          int current = lexical_cast<int>(rawname);
+          if (current > params_.stop_img_name)
+          {
+            it++;
+            continue;
+          }
+        }
+
         ROS_INFO_STREAM("[Reconstruction]: Processing cloud: " << filename);
 
         // Search current pointcloud into the cloud poses
@@ -81,17 +102,17 @@ namespace uware
 
         // Registration
         tf::Transform out;
-        reg_->pipeline(id-1, id, prev2curr, valid_sim3, valid_icp, sim3_inliers, icp_score, camera_matrix, out);
+        reg_->pipeline(id-1, id, prev2curr, valid_sim3, valid_icp, sim3_inliers, icp_score, camera_matrix, false, out);
 
         // Switch between registration and map tf
         tf::Transform curr_pose;
         if (valid_sim3 || valid_icp)
-          curr_pose = prev_pose_ * out;
+         curr_pose = prev_pose_ * out;
         else
           curr_pose = map_cloud_poses_[id].second;
 
         // Save the result
-        EdgeInfo e(Utils::id2str(id-1), rawname, valid_sim3, valid_icp, sim3_inliers, icp_score);
+        EdgeInfo e(Utils::id2str(id-1), rawname, valid_sim3, valid_icp, sim3_inliers, icp_score, prev2curr);
         edges_result_.push_back(e);
         PoseInfo p(rawname, curr_pose);
         poses_result_.push_back(p);

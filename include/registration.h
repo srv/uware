@@ -91,6 +91,7 @@ public:
                 int& sim3_inliers,
                 double& icp_score,
                 const cv::Mat& camera_matrix,
+                const bool & is_loop,
                 tf::Transform& out);
 
   /** \brief Performs a 3D registration

@@ -1,5 +1,5 @@
-#ifndef LOOPCLOSING_H
-#define LOOPCLOSING_H
+#ifndef BUILD3D_H
+#define BUILD3D_H
 
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
@@ -9,18 +9,15 @@
 #include <pcl_ros/transforms.h>
 #include <pcl/point_types.h>
 #include <pcl/common/common.h>
-
-#include <boost/lexical_cast.hpp>
+#include <pcl/filters/filter.h>
+#include <pcl/filters/approximate_voxel_grid.h>
+#include <pcl/filters/crop_box.h>
 
 #include "constants.h"
-#include "edge_info.h"
 #include "pose_info.h"
 #include "utils.h"
-#include "registration.h"
-#include "graph.h"
 
 using namespace std;
-using namespace boost;
 
 typedef pcl::PointXYZRGB          Point;
 typedef pcl::PointCloud<Point>    PointCloud;
@@ -28,7 +25,7 @@ typedef pcl::PointCloud<Point>    PointCloud;
 namespace uware
 {
 
-class LoopClosing
+class Build3D
 {
 
 public:
@@ -36,14 +33,14 @@ public:
   struct Params
   {
     string indir;                   //!> Input directory (the output of pre-process)
-    int discard_window;             //!> Number of previous and consecutive nodes to discard in the loop closing search
-    int n_best;                     //!> Number of candidates to take to try the loop closing
+    string outdir;                  //!> Input directory (the output of pre-process)
+    double voxel_resolution;        //!> Voxel filter cloud resolution (m)
 
     // Default settings
     Params () {
       indir                   = "";
-      discard_window          = 5;
-      n_best                  = 5;
+      outdir                  = "";
+      voxel_resolution        = 0.01;
     }
   };
 
@@ -54,29 +51,30 @@ public:
 
   /** \brief Class constructor
    */
-  LoopClosing(Registration* reg);
+  Build3D();
 
-  /** \brief Compute the loop closings
+  /** \brief Build the 3D
    * \param the vector of poses
-   * \param the vector of edges between the poses
    */
-  void compute(vector<PoseInfo> poses, vector<EdgeInfo> edges);
-
+  void build(const vector<PoseInfo>& poses);
 
 protected:
 
-  vector<uint> getClosestPoses(vector<PoseInfo> poses, uint id, int n_best, int discard_window, bool xy);
+  /** \brief Filters a pointcloud
+   * @return filtered cloud
+   * \param input cloud
+   */
+  PointCloud::Ptr filterCloud(PointCloud::Ptr in_cloud);
+
 
 private:
 
   Params params_; //!> Stores parameters.
 
-  Registration* reg_; //!> Registration class
-
-  Graph graph_; //!> Graph optimizer
+  bool first_; //!> First iteration
 
 };
 
 } // namespace
 
-#endif // LOOPCLOSING_H
+#endif // BUILD3D_H

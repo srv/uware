@@ -85,7 +85,8 @@ add_executable(reconstruction
   src/registration.cpp
   src/frame_to_frame.cpp
   src/loop_closing.cpp
-  src/graph.cpp)
+  src/graph.cpp
+  src/build3d.cpp)
 target_link_libraries(reconstruction
   ${eigen_LIBRARIES}
   ${OpenCV_LIBRARIES}

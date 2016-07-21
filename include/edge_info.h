@@ -2,6 +2,7 @@
 #define EDGEINFO_H
 
 #include <ros/ros.h>
+#include <tf/transform_datatypes.h>
 
 using namespace std;
 
@@ -15,6 +16,7 @@ namespace uware
     bool valid_icp;         //!> True if valid icp
     int sim3_inliers;       //!> Number of Sim3 inliers between nodes (0 if no Sim3)
     double icp_score;       //!> ICP fitness score (-1 if no icp)
+    tf::Transform edge;     //!> Edge transform
 
     EdgeInfo() {
       name_a = "";
@@ -24,13 +26,14 @@ namespace uware
       sim3_inliers = 0;
       icp_score = -1.0;
     }
-    EdgeInfo(string a, string b, bool ok_sim3, bool ok_icp, int inliers, double score) {
+    EdgeInfo(string a, string b, bool ok_sim3, bool ok_icp, int inliers, double score, tf::Transform pose) {
       name_a = a;
       name_b = b;
       valid_sim3 = ok_sim3;
       valid_icp = ok_icp;
       sim3_inliers = inliers;
       icp_score = score;
+      edge = pose;
     }
   };
 
