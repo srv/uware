@@ -10,10 +10,11 @@ namespace uware
   {
     // Read camera matrix
     cv::Mat camera_matrix;
+    ROS_INFO_STREAM("params indir:" << params_.indir << "/" << CAMERA_MATRIX_FILE);
     cv::FileStorage fs(params_.indir + "/" + CAMERA_MATRIX_FILE, cv::FileStorage::READ);
     fs["camera_matrix"] >> camera_matrix;
     fs.release();
-
+    ROS_INFO_STREAM("camera matrix readed" << poses.size());
     int lc_counter = 0;
     for (uint i=0; i<poses.size(); i++)
     {
@@ -89,9 +90,90 @@ namespace uware
     }
 
     // TODO! Search loop closings with libhaloc
+    ROS_INFO_STREAM("[Reconstruction]: bucle acabat");
+    // Store optimized poses
+    string vertices_file  = params_.outdir + "/" + OPTIMIZED_POSES;
+    string edges_file     = params_.outdir + "/" + OPTIMIZED_EDGES;
+    fstream f_vertices(vertices_file.c_str(), ios::out | ios::trunc);
+    fstream f_edges(edges_file.c_str(), ios::out | ios::trunc);
+    f_vertices << "% timestamp, frame id, x, y, z, qx, qy, qz, qw" << endl;
+    for (uint i=0; i<poses.size(); i++)
+    {
+      // Get stamp
+      double stamp = getFrameStamp(poses[i].name);
 
+      f_vertices << fixed <<
+      setprecision(6) <<
+      stamp << "," <<
+      boost::lexical_cast<int>(poses[i].name) << "," <<
+      poses[i].pose.getOrigin().x() << "," <<
+      poses[i].pose.getOrigin().y() << "," <<
+      poses[i].pose.getOrigin().z() << "," <<
+      poses[i].pose.getRotation().x() << "," <<
+      poses[i].pose.getRotation().y() << "," <<
+      poses[i].pose.getRotation().z() << "," <<
+      poses[i].pose.getRotation().w() <<  endl;
+    }
+    f_vertices.close();
+    f_edges << "% name_a, name_b, valid_sim3, valid_icp, sim3_inliers, icp_score" << endl;
+    for (uint i=0; i<edges.size(); i++)
+    {
+      f_edges << fixed <<
+      setprecision(6) <<
+      edges[i].name_a << "," <<
+      edges[i].name_b << "," <<
+      edges[i].valid_sim3 << "," <<
+      edges[i].valid_icp << "," <<
+      edges[i].sim3_inliers << "," <<
+      edges[i].icp_score <<  endl;
+    }
+    f_edges.close();
+
+    // Store homographies
+    /*Utils::createDir("/home/xesc/workspace/ros/src/uware/reconstruction/homographies");
+    for (uint i=0; i<poses.size(); i++)
+    {
+      tf::Matrix3x3 mbase = poses[i].pose.getBasis();
+      double yaw, dummy_1, dummy_2;
+      mbase.getRPY(dummy_1, dummy_2, yaw);
+      cv::Mat H = (cv::Mat_<double>(3,3) << cos(yaw), -sin(yaw), poses[i].pose.getOrigin().x(), sin(yaw),  cos(yaw), poses[i].pose.getOrigin().y(), 0, 0, 1.0);
+      cv::FileStorage fs2("/home/xesc/workspace/ros/src/uware/reconstruction/homographies/" + Utils::id2str(i) + ".yaml", cv::FileStorage::WRITE);
+      cv::write(fs2, "filename", "/tmp/mosaicing/images/" + Utils::id2str(i) + ".jpg");
+      cv::write(fs2, "HP", H);
+      fs2.release();
+    }*/
 
     ROS_INFO_STREAM("[Reconstruction]: Total loop closings: " << lc_counter);
+  }
+
+  double LoopClosing::getFrameStamp(string name)
+  {
+    string file = params_.indir + "/" + ODOM_FILE;
+
+    // Get the pointcloud poses file
+    ifstream poses_file(file.c_str());
+    string line;
+    while (getline(poses_file, line))
+    {
+      int i = 0;
+      double stamp = -1.0;
+      string cloud_name, value;
+      istringstream ss(line);
+      while(getline(ss, value, ','))
+      {
+        if (i == 0)
+          cloud_name = value;
+        else if (i == 1)
+        {
+          stamp = boost::lexical_cast<double>(value);
+          if (cloud_name == name)
+            return stamp;
+        }
+        i++;
+      }
+    }
+
+    return -1.0;
   }
 
   vector<uint> LoopClosing::getClosestPoses(vector<PoseInfo> poses, uint id, int n_best, int discard_window, bool xy)

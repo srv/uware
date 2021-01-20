@@ -15,6 +15,7 @@ namespace uware
     int     min_th_fast   = 7;
     l_ORB_extractor_ = new orb_utils::ORBextractor(n_features, scale_factor, n_levels, ini_th_fast, min_th_fast);
     r_ORB_extractor_ = new orb_utils::ORBextractor(n_features, scale_factor, n_levels, ini_th_fast, min_th_fast);
+    ROS_INFO("[PreProcess]: init Preprocess node.");
   }
 
 
@@ -28,6 +29,7 @@ namespace uware
       const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
   {
     // First iteration
+    ROS_INFO("[PreProcess]: Processing the Inputs Callback.");
     if (initialization_)
     {
       // Transformation between odometry and camera
@@ -71,6 +73,7 @@ namespace uware
     }
 
     // Convert the pointcloud
+    /* fbf commentted on 18/01/2021 uncomment of PC storage
     PointCloud::Ptr pcl_cloud(new PointCloud);
     fromROSMsg(*cloud_msg, *pcl_cloud);
     pcl_cloud = filterCloud(pcl_cloud);
@@ -82,7 +85,7 @@ namespace uware
                       pcl_cloud->size() << ", min_cloud_size: " <<
                       params_.min_cloud_size << "). Skipping...");
       return;
-    }
+    }*/
 
     // Convert odometry to camera frame
     tf::Transform odom = odom2Tf(*odom_msg) * odom2camera_;
@@ -104,9 +107,10 @@ namespace uware
       // Stamp
       double stamp = l_img_msg->header.stamp.toSec();
 
-      // Store cloud
+      // Store cloud 
+      /*fbf commentted on 18/01/2021 uncomment of PC storage
       string pc_filename = params_.outdir + "/" + PC_DIR + "/" + Utils::id2str(id_) + ".pcd";
-      pcl::io::savePCDFileBinary(pc_filename, *pcl_cloud);
+      pcl::io::savePCDFileBinary(pc_filename, *pcl_cloud);*/
 
       // Store odometry
       storeOdometry(ODOM_FILE, id_, stamp, odom);
@@ -122,7 +126,7 @@ namespace uware
       cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
 
       cv::FileStorage fs(params_.outdir + "/homographies/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
-      write(fs, "filename", "/tmp/mosaicing/images/" + Utils::id2str(id_) + ".jpg");
+      write(fs, "filename", "/home/xesc/tmp/mosaicing/images/" + Utils::id2str(id_) + ".jpg");
       write(fs, "HO", HO);
       write(fs, "HM", HM);
       fs.release();
@@ -138,9 +142,10 @@ namespace uware
       id_++;
 
       // Log
-      ROS_INFO_STREAM("\n[PreProcess]: Storing pointcloud #" << id_);
+      /*fbf commentted on 18/01/2021 uncomment of PC storage
+      ROS_INFO_STREAM("\n[PreProcess]: Storing pointcloud #" << id_);*/
       ROS_INFO_STREAM("              Dist to prev: " << dist << " m.");
-      ROS_INFO_STREAM("              Cloud size: " << pcl_cloud->size());
+   //   ROS_INFO_STREAM("              Cloud size: " << pcl_cloud->size());
       ROS_INFO_STREAM("              Kp size: " << kp_size);
     }
 
@@ -225,8 +230,9 @@ namespace uware
     fs.release();
 
     cv::imwrite(params_.outdir + "/" + IMG_DIR + "/" + Utils::id2str(id_) + ".jpg", l_img);
-
-    return l_kp.size();
+    return 1;
+   
+// return l_kp.size();
   }
 
   bool PreProcess::imgMsgToMat(sensor_msgs::Image l_img_msg,
@@ -303,6 +309,7 @@ namespace uware
     return true;
   }
 
+/* fbf commentted on 18/01/2021 uncomment of PC storage
   PointCloud::Ptr PreProcess::filterCloud(PointCloud::Ptr in_cloud)
   {
     // Remove nans
@@ -318,6 +325,6 @@ namespace uware
     grid.filter(*cloud);
 
     return cloud;
-  }
+  }*/
 
 }

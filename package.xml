@@ -7,7 +7,7 @@
   <license>BSD</license>
   <url type="website">https://github.com/srv/uware</url>
   <url type="bugtracker">https://github.com/srv/uware/issues</url>
-
+  <!-- Dependencies can be catkin packages or system dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>roscpp</build_depend>
@@ -20,7 +20,7 @@
   <build_depend>message_generation</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>image_geometry</build_depend>
-  <build_depend>libhaloc</build_depend>
+  <!--build_depend>libhaloc</build_depend-->
   <build_depend>pcl_ros</build_depend>
   <build_depend>cmake_modules</build_depend>
   <build_depend>tf_conversions</build_depend>
@@ -36,9 +36,11 @@
   <run_depend>message_runtime</run_depend>
   <run_depend>cv_bridge</run_depend>
   <run_depend>image_geometry</run_depend>
-  <run_depend>libhaloc</run_depend>
+  <!--run_depend>libhaloc</run_depend-->
   <run_depend>pcl_ros</run_depend>
   <run_depend>tf_conversions</run_depend>
   <run_depend>orb_utils</run_depend>
-
+<!-- The export tag contains other, unspecified, tags -->
+  <export>
+  </export>
 </package>

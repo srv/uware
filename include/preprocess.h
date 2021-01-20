@@ -23,8 +23,8 @@
 #include <pcl/filters/crop_box.h>
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/nonfree/features2d.hpp>
+//#include <opencv2/features2d/features2d.hpp>
+//#include <opencv2/nonfree/features2d.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -161,7 +161,8 @@ protected:
    * @return filtered cloud
    * \param input cloud
    */
-  PointCloud::Ptr filterCloud(PointCloud::Ptr in_cloud);
+  /* fbf commentted on 18/01/2021 uncomment of PC storage
+  PointCloud::Ptr filterCloud(PointCloud::Ptr in_cloud); */
 
 
 private:

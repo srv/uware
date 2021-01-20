@@ -107,7 +107,7 @@ namespace uware
         // Switch between registration and map tf
         tf::Transform curr_pose;
         if (valid_sim3 || valid_icp)
-         curr_pose = prev_pose_ * out;
+          curr_pose = prev_pose_ * out;
         else
           curr_pose = map_cloud_poses_[id].second;
 

@@ -23,10 +23,14 @@ int main(int argc, char **argv)
 
   // Read parameters
   PreProcess::Params params;
-  string odom_topic, map_topic, camera_topic, outdir;
+  string odom_topic, map_topic, camera_left_topic, camera_right_topic, camera_left_info, camera_right_info, camera_topic_points2, outdir;
   nhp.param("odom_topic",       odom_topic,                 string(""));
   nhp.param("map_topic",        map_topic,                  string(""));
-  nhp.param("camera_topic",     camera_topic,               string(""));
+  nhp.param("camera_left_topic",     camera_left_topic,     string(""));
+  nhp.param("camera_right_topic",     camera_right_topic,   string(""));
+  nhp.param("camera_left_info",     camera_left_info,       string(""));
+  nhp.param("camera_right_info",     camera_right_info,     string(""));
+  nhp.param("camera_topic_points2",     camera_topic_points2,     string(""));
   nhp.param("outdir",           params.outdir,              ros::package::getPath("uware") + "/" + PREPROCESS_DIR);
   nhp.param("min_cloud_size",   params.min_cloud_size,      100);
   nhp.param("store_distance",   params.store_distance,      0.5);
@@ -60,15 +64,24 @@ int main(int argc, char **argv)
   boost::shared_ptr<Sync> sync;
   odom_sub      .subscribe(nh, odom_topic, 20);
   map_sub       .subscribe(nh, map_topic, 20);
-  left_sub      .subscribe(it, camera_topic+"/left/image_rect_color", 5);
-  right_sub     .subscribe(it, camera_topic+"/right/image_rect_color", 5);
-  left_info_sub .subscribe(nh, camera_topic+"/left/camera_info",  5);
-  right_info_sub.subscribe(nh, camera_topic+"/right/camera_info", 5);
-  cloud_sub     .subscribe(nh, camera_topic+"/points2", 5);
+  left_sub      .subscribe(it, camera_left_topic, 5);
+  right_sub     .subscribe(it, camera_right_topic, 5);
+  left_info_sub .subscribe(nh, camera_left_info,  5);
+  right_info_sub.subscribe(nh, camera_right_info, 5);
+  cloud_sub     .subscribe(nh, camera_topic_points2, 5);
 
   // Sync callback
   sync.reset(new Sync(SyncPolicy(10), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, cloud_sub) );
   sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6, _7));
+
+  ROS_INFO_STREAM("odom_topic " << odom_topic);
+  ROS_INFO_STREAM("map_topic " << map_topic);
+  ROS_INFO_STREAM("camera_left_topic " << camera_left_topic);
+  ROS_INFO_STREAM("camera_right_topic " << camera_right_topic);
+  ROS_INFO_STREAM("camera_left_info " << camera_left_info);
+  ROS_INFO_STREAM("camera_right_info " << camera_right_info);
+
+  ROS_INFO_STREAM("odom_topic " << params.outdir);
 
   ros::spin();
   ros::shutdown();
