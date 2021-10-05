@@ -26,8 +26,11 @@ namespace uware
       const sensor_msgs::ImageConstPtr& r_img_msg,
       const sensor_msgs::CameraInfoConstPtr& l_info_msg,
       const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-      const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
+      const sensor_msgs::PointCloud2ConstPtr& cloud_msg,
+      const sensor_msgs::RangeConstPtr& altitude_msg)
   {
+    double altitud  = altitude_msg->range;
+
     // First iteration
     ROS_INFO("[PreProcess]: Processing the Inputs Callback.");
     if (initialization_)
@@ -60,7 +63,8 @@ namespace uware
 
       // Store camera matrix
       cv::FileStorage fs(params_.outdir + "/" + CAMERA_MATRIX_FILE, cv::FileStorage::WRITE);
-      write(fs, "camera_matrix", camera_matrix_);
+      fs << "camera_matrix " << camera_matrix_;
+      //write(fs, "camera_matrix", camera_matrix_);
       fs.release();
       ROS_INFO("[PreProcess]: Camera matrix stored.");
 
@@ -129,6 +133,7 @@ namespace uware
       write(fs, "filename", "/home/xesc/tmp/mosaicing/images/" + Utils::id2str(id_) + ".jpg");
       write(fs, "HO", HO);
       write(fs, "HM", HM);
+      write(fs, "ALT", altitud);
       fs.release();
       // --------------------------------
 
@@ -208,8 +213,8 @@ namespace uware
 
   int PreProcess::storeImages(cv::Mat l_img, cv::Mat r_img, double stamp)
   {
-    // Extract ORB
-    orb_utils::Frame frame = orb_utils::Frame(l_img, r_img, stamp,
+    // Extract ORB // commented by fbf 21/01/2021. Uncomment to store yaml file with image key points. 
+    /*orb_utils::Frame frame = orb_utils::Frame(l_img, r_img, stamp,
                                               l_ORB_extractor_,
                                               r_ORB_extractor_,
                                               camera_matrix_,
@@ -219,7 +224,7 @@ namespace uware
     vector<cv::Point3d> world_points;
     frame.GetLeftRightMatchings(l_kp, r_kp, l_desc, r_desc, world_points, stereo_camera_model_, params_.epipolar_th);
 
-    // Store
+    // Store 
     cv::FileStorage fs(params_.outdir + "/" + IMG_DIR + "/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
     write(fs, "l_kp", l_kp);
     write(fs, "r_kp", r_kp);
@@ -228,7 +233,7 @@ namespace uware
     write(fs, "world_points", world_points);
 
     fs.release();
-
+*/
     cv::imwrite(params_.outdir + "/" + IMG_DIR + "/" + Utils::id2str(id_) + ".jpg", l_img);
     return 1;
    

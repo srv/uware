@@ -1,5 +1,5 @@
-%YAML:1.0
-camera_matrix: !!opencv-matrix
+%YAML 1.0
+camera_matrix: 
    rows: 3
    cols: 3
    dt: d

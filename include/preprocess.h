@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/Range.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -95,7 +96,8 @@ public:
                 const sensor_msgs::ImageConstPtr& r_img_msg,
                 const sensor_msgs::CameraInfoConstPtr& l_info_msg,
                 const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-                const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
+                const sensor_msgs::PointCloud2ConstPtr& cloud_msg,
+                const sensor_msgs::RangeConstPtr& altitude_msg);
 
 
 protected:
