@@ -5,6 +5,12 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Range.h>
+#include <cola2_msgs/NavSts.h>
+#include <cola2_msgs/NED.h>
+#include <cola2_msgs/RPY.h>
+#include <cola2_msgs/DecimalLatLon.h>
+#include <cola2_msgs/VehicleStatus.h>
+
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>

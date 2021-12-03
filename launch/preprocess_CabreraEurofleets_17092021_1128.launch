@@ -46,6 +46,7 @@
     <param name="camera_left_info" value="$(arg camera)/scaled_x4/left/camera_info"/>
     <param name="camera_topic_points2" value="$(arg camera)/scaled_x4/points2"/>
     <param name="altitude_topic" value="/turbot/navigator/altitude_EKF_filtered"/>
+    <param name="navstatus_topic" value="/turbot/navigator/navigation"/>
     <param name="min_cloud_size" value="400"/>
     <param name="store_distance" value="0.35"/>
     <param name="outdir" value="/home/xesc/workspace_turbot/src/uware/data/preprocess"/>
