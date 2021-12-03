@@ -56,15 +56,15 @@ int main(int argc, char **argv)
   message_filters::Subscriber<cola2_msgs::NavSts> navstatus_sub;
 
 
-
+////sensor_msgs::PointCloud2
   typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry,
                                                           nav_msgs::Odometry,
                                                           sensor_msgs::Image,
                                                           sensor_msgs::Image,
                                                           sensor_msgs::CameraInfo,
                                                           sensor_msgs::CameraInfo,
-                                                          sensor_msgs::PointCloud2, 
-                                                          sensor_msgs::Range> SyncPolicy;
+                                                          sensor_msgs::Range,
+                                                          cola2_msgs::NavSts> SyncPolicy;
   typedef message_filters::Synchronizer<SyncPolicy> Sync;
 
   // Setup the sync
@@ -77,9 +77,10 @@ int main(int argc, char **argv)
   right_info_sub.subscribe(nh, camera_right_info, 5);
   altitude_sub  .subscribe(nh, altitude_topic, 5);
   cloud_sub     .subscribe(nh, camera_topic_points2, 5);
+  navstatus_sub     .subscribe(nh, navstatus_topic, 20);
 
   // Sync callback
-  sync.reset(new Sync(SyncPolicy(2500), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, cloud_sub, altitude_sub) );
+  sync.reset(new Sync(SyncPolicy(2500), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
   //sync.reset(new Sync(SyncPolicy(10), odom_sub, map_sub, left_sub, right_sub, left_info_sub, altitude_sub, right_info_sub, cloud_sub) );
 
   sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6, _7, _8));

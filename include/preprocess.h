@@ -95,15 +95,15 @@ public:
    * \param l_info left stereo info message of type sensor_msgs::CameraInfo
    * \param r_info right stereo info message of type sensor_msgs::CameraInfo
    * \param pointcloud
-   */
+   */// const sensor_msgs::PointCloud2ConstPtr& cloud_msg
   void callback(const nav_msgs::Odometry::ConstPtr& odom_msg,
                 const nav_msgs::Odometry::ConstPtr& map_msg,
                 const sensor_msgs::ImageConstPtr& l_img_msg,
                 const sensor_msgs::ImageConstPtr& r_img_msg,
                 const sensor_msgs::CameraInfoConstPtr& l_info_msg,
                 const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-                const sensor_msgs::PointCloud2ConstPtr& cloud_msg,
-                const sensor_msgs::RangeConstPtr& altitude_msg);
+                const sensor_msgs::RangeConstPtr& altitude_msg,
+                const cola2_msgs::NavSts::ConstPtr& navstatus_msg);
 
 
 protected:

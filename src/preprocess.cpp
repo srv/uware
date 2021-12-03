@@ -18,7 +18,7 @@ namespace uware
     ROS_INFO("[PreProcess]: init Preprocess node.");
   }
 
-
+//const sensor_msgs::PointCloud2ConstPtr& cloud_msg
   void PreProcess::callback(
       const nav_msgs::Odometry::ConstPtr& odom_msg,
       const nav_msgs::Odometry::ConstPtr& map_msg,
@@ -26,10 +26,13 @@ namespace uware
       const sensor_msgs::ImageConstPtr& r_img_msg,
       const sensor_msgs::CameraInfoConstPtr& l_info_msg,
       const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-      const sensor_msgs::PointCloud2ConstPtr& cloud_msg,
-      const sensor_msgs::RangeConstPtr& altitude_msg)
+      const sensor_msgs::RangeConstPtr& altitude_msg,
+      const cola2_msgs::NavSts::ConstPtr& navstatus_msg)
   {
     double altitud  = altitude_msg->range;
+    float latitud = navstatus_msg->global_position.latitude;
+    float longitud = navstatus_msg->global_position.longitude;
+    ROS_INFO_STREAM("[PreProcess]: latitude and longitude of key frame " << latitud <<" // " <<  longitud );
 
     // First iteration
     ROS_INFO("[PreProcess]: Processing the Inputs Callback.");
@@ -134,6 +137,9 @@ namespace uware
       write(fs, "HO", HO);
       write(fs, "HM", HM);
       write(fs, "ALT", altitud);
+      write(fs, "LAT", latitud);
+      write(fs, "LONG", longitud);
+
       fs.release();
       // --------------------------------
 
