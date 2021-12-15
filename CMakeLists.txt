@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_msgs
   cola2_msgs
+  ned_tools
   tf
   sensor_msgs
   geometry_msgs
@@ -74,8 +75,9 @@ find_package(SuiteSparse REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES uware
-  CATKIN_DEPENDS image_transport cv_bridge roscpp sensor_msgs geometry_msgs cola2_msgs
+  CATKIN_DEPENDS image_transport cv_bridge roscpp sensor_msgs geometry_msgs cola2_msgs ned_tools
   DEPENDS OpenCV
+  DEPENDS Eigen3
 )
 
 include_directories(include

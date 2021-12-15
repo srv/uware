@@ -5,11 +5,13 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Range.h>
+//#include <geometry_msgs/Quaternion>
 #include <cola2_msgs/NavSts.h>
 #include <cola2_msgs/NED.h>
 #include <cola2_msgs/RPY.h>
 #include <cola2_msgs/DecimalLatLon.h>
 #include <cola2_msgs/VehicleStatus.h>
+#include <ned_tools/ned.h>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
@@ -35,6 +37,8 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <eigen3/Eigen/Dense>
+
 
 #include <orb_utils/Frame.h>
 #include <orb_utils/ORBextractor.h>
@@ -77,7 +81,7 @@ public:
       epipolar_th       = 1.5;
     }
   };
-
+  
   /** \brief Set class params
    * \param the parameters struct
    */
@@ -130,6 +134,9 @@ protected:
    */
   void storeOdometry(string filename, int id, double stamp, tf::Transform odometry);
 
+  void storeNavSts(string filename, int id, double stamp, float lat, float lon);
+
+
   /** \brief Store image data into file
    * @return number of left keypoints
    * \param left image
@@ -154,6 +161,8 @@ protected:
    * \param Odometry message
    */
   tf::Transform odom2Tf(nav_msgs::Odometry odom_msg);
+
+  nav_msgs::Odometry Tf2odom(tf::Transform Tf);
 
   /** \brief Get the transform between odometry frame and camera frame
    * @return true if valid transform, false otherwise
@@ -197,6 +206,8 @@ private:
 
   image_geometry::StereoCameraModel stereo_camera_model_; //!> Stereo camera model
   float baseline_; //!> Stereo baseline multiplied by fx.
+                              //!< reference frame the AUV is in
+
 
 };
 

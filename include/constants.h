@@ -18,6 +18,7 @@ namespace uware
   static const string CAMERA_MATRIX_FILE = "camera_matrix.yaml";
 
   static const string ODOM_FILE = "odom.txt";
+  static const string NAVSTS_FILE = "navsts.csv";
 
   static const string OMAP_FILE = "map.txt";
 

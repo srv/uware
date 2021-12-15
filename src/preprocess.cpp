@@ -32,7 +32,23 @@ namespace uware
     double altitud  = altitude_msg->range;
     float latitud = navstatus_msg->global_position.latitude;
     float longitud = navstatus_msg->global_position.longitude;
-    ROS_INFO_STREAM("[PreProcess]: latitude and longitude of key frame " << latitud <<" // " <<  longitud );
+    float north = navstatus_msg->position.north;
+    float east = navstatus_msg->position.east; 
+    float depth = navstatus_msg->position.depth;
+    float roll = navstatus_msg->orientation.roll;
+    float pitch = navstatus_msg->orientation.pitch;
+    float yaw = navstatus_msg->orientation.yaw;
+    std_msgs::Header headerNav = navstatus_msg->header;
+    float originlat = navstatus_msg -> origin.latitude;
+    float originlong = navstatus_msg -> origin.longitude;
+
+    float body_velocityX = navstatus_msg->body_velocity.x;
+    float body_velocityY = navstatus_msg->body_velocity.y;
+    float body_velocityZ = navstatus_msg->body_velocity.z;
+
+
+    ROS_INFO_STREAM("[PreProcess]: latitude and longitude of base link " << latitud <<" // " <<  longitud );
+    
 
     // First iteration
     ROS_INFO("[PreProcess]: Processing the Inputs Callback.");
@@ -97,6 +113,53 @@ namespace uware
     // Convert odometry to camera frame
     tf::Transform odom = odom2Tf(*odom_msg) * odom2camera_;
     tf::Transform map  = odom2Tf(*map_msg) * odom2camera_;
+/*
+    Transform NED data obtained with respect to the turbot base_link to the left camera optical. Then, convert from NED to Geodesical to obtain the lat/long of
+    the image instead of lat/log of the turbot baselink */
+
+    nav_msgs::Odometry odometry_tmp; // create temporal odometry message
+    
+    odometry_tmp.header = headerNav; // its header will be the same as the navsts
+    
+    //set the position from the NED pose
+    odometry_tmp.pose.pose.position.x = north;
+    odometry_tmp.pose.pose.position.y = east;
+    odometry_tmp.pose.pose.position.z = depth;
+    // create a new quaternion 
+    tf::Quaternion odom_quat; 
+    odom_quat.setRPY(roll, pitch, yaw); // set the quaternion from the roll,pitch and yaw of the NavSts NED orientation
+    odom_quat.normalize(); // normalize in such a way the norm of the quaternion is 1
+    geometry_msgs::Quaternion odom_quat_tmp; 
+
+    tf::quaternionTFToMsg(odom_quat, odom_quat_tmp); // transform the tf::quaternion into a geometry message Quaternion
+    odometry_tmp.pose.pose.orientation = odom_quat_tmp; // put it into the orientation of the temporal odometry message
+    //set the velocity
+    odometry_tmp.child_frame_id = "turbot/base_link";
+    odometry_tmp.twist.twist.linear.x = body_velocityX;
+    odometry_tmp.twist.twist.linear.y = body_velocityY;
+    odometry_tmp.twist.twist.linear.z = body_velocityZ;
+
+    tf::Transform Nav = odom2Tf(odometry_tmp) * odom2camera_; // transform NED odometry to the left optical. 
+    nav_msgs::Odometry odometry_tmp2 = Tf2odom(Nav); // recover odom. from TF
+    // convert this odometry NED msg into a NED message and then, from NED to Geodesic using the initial Lat/Long 
+    north=odometry_tmp2.pose.pose.position.x ;
+    east=odometry_tmp2.pose.pose.position.y ;
+    depth=odometry_tmp2.pose.pose.position.z ;
+    const Eigen::Vector3d pos(north, east, depth);
+    Ned ned_ = Ned(originlat, originlong, altitud); // initialize NED origin
+
+    //const Eigen::Vector3d latlonh = ned_.ned2geodetic(pos);
+    double lati, loni, h; // get the Geodesic data of NED position with respect the NED origin.
+    ned_.ned2Geodetic(north, east, depth, lati, loni, h); // lati and loni contain the Geodesic data corresponding to the NED position of the left optical.
+    ROS_INFO_STREAM("[PreProcess]: Geodesic data corresponding to the NED pose of the left optical" << lati <<" // " <<  loni );
+
+
+
+
+
+
+    
+
 
     // Compute distance
     double dist;
@@ -122,6 +185,7 @@ namespace uware
       // Store odometry
       storeOdometry(ODOM_FILE, id_, stamp, odom);
       storeOdometry(OMAP_FILE,  id_, stamp, map);
+      storeNavSts(NAVSTS_FILE,id_, stamp, lati, loni);
 
       // --------------------------------
       tf::Matrix3x3 obase = odom.getBasis();
@@ -129,6 +193,8 @@ namespace uware
       double oyaw, myaw, dummy_1, dummy_2;
       obase.getRPY(dummy_1, dummy_2, oyaw);
       mbase.getRPY(dummy_1, dummy_2, myaw);
+      ROS_INFO("[PreProcess]: Register in CSV file.");
+
       cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
       cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
 
@@ -159,7 +225,6 @@ namespace uware
    //   ROS_INFO_STREAM("              Cloud size: " << pcl_cloud->size());
       ROS_INFO_STREAM("              Kp size: " << kp_size);
     }
-
   }
 
   bool PreProcess::createDirs()
@@ -216,6 +281,24 @@ namespace uware
 
     f_odom.close();
   }
+
+
+  void PreProcess::storeNavSts(string filename, int id, double stamp, float lat, float lon)
+  {
+    string navstatus_file = params_.outdir + "/" + filename;
+    fstream f_navsts(navstatus_file.c_str(), ios::out | ios::app);
+
+    f_navsts << fixed <<
+    setprecision(15) <<
+    Utils::id2str(id) << "," <<
+    stamp << "," <<
+
+    lat << "," <<
+    lon << "," << endl;
+
+    f_navsts.close();
+  }
+
 
   int PreProcess::storeImages(cv::Mat l_img, cv::Mat r_img, double stamp)
   {
@@ -296,6 +379,27 @@ namespace uware
       return odom;
     }
   }
+
+  nav_msgs::Odometry PreProcess::Tf2odom(tf::Transform Tf)
+  {
+    // Get the data
+
+    tf::Quaternion q_in = Tf.getRotation(); // get transform orientation in quaternion
+    tf::Vector3 t_in = Tf.getOrigin(); // get the transform translation in a Vector3
+
+    nav_msgs::Odometry odometry;  
+
+    odometry.pose.pose.position.x=t_in.getX(); // get x, y and z translation, NED position
+    odometry.pose.pose.position.y=t_in.getY();
+    odometry.pose.pose.position.z=t_in.getZ();
+    geometry_msgs::Quaternion odom_quat_tmp2; 
+    ROS_INFO_STREAM("[PreProcess]: NED odometry transformed into left optical" << odometry.pose.pose.position.x <<" // " <<  odometry.pose.pose.position.y );
+    tf::quaternionTFToMsg(q_in, odom_quat_tmp2); // convert the tf quaternion into a geometry message quaternion 
+    odometry.pose.pose.orientation=odom_quat_tmp2; // assign this quaternion to the odo. orientation
+    return odometry;
+
+  }
+
 
   bool PreProcess::getOdom2CameraTf(string odom_frame_id,
       string camera_frame_id,
