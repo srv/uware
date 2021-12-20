@@ -134,8 +134,7 @@ protected:
    */
   void storeOdometry(string filename, int id, double stamp, tf::Transform odometry);
 
-  void storeNavSts(string filename, int id, double stamp, float lat, float lon);
-
+  void storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, float latiupright, float lonupright, float hupright, float latupleft, float lonupleft, float hupleft, float latdownright, float londownright, float hdownright, float latdownleft, float londownleft, float hdownleft);
 
   /** \brief Store image data into file
    * @return number of left keypoints
@@ -161,6 +160,8 @@ protected:
    * \param Odometry message
    */
   tf::Transform odom2Tf(nav_msgs::Odometry odom_msg);
+  tf::Transform data2Tf(double  W, double  Y, double roll1, double pitch1, double yaw1);
+
 
   nav_msgs::Odometry Tf2odom(tf::Transform Tf);
 

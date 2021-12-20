@@ -41,6 +41,16 @@ namespace uware
     std_msgs::Header headerNav = navstatus_msg->header;
     float originlat = navstatus_msg -> origin.latitude;
     float originlong = navstatus_msg -> origin.longitude;
+    int height=l_info_msg->height;
+    int width=l_info_msg->width;
+    
+    double FOV_x=34.73*((2*M_PI)/360.0);
+    double FOV_y=26.84*((2*M_PI)/360.0);
+
+    double x_dim_img=2*altitud*tan(FOV_x/2); //#width
+    double y_dim_img=2*altitud*tan(FOV_y/2); //#height
+
+
 
     float body_velocityX = navstatus_msg->body_velocity.x;
     float body_velocityY = navstatus_msg->body_velocity.y;
@@ -139,26 +149,95 @@ namespace uware
     odometry_tmp.twist.twist.linear.y = body_velocityY;
     odometry_tmp.twist.twist.linear.z = body_velocityZ;
 
-    tf::Transform Nav = odom2Tf(odometry_tmp) * odom2camera_; // transform NED odometry to the left optical. 
+    /*image corners*/ 
+    double W=(x_dim_img/2), H=(y_dim_img/2);
+    double angle =atan(W/H);
+    
+    double roll1=0, pitch1=0, yaw1= angle; 
+    //transform center image to corners
+    tf::Transform uprightcorner= data2Tf(W,H,roll1,pitch1,yaw1);
+    tf::Transform upleftcorner= data2Tf(-W,H,roll1,pitch1,-yaw1);
+    tf::Transform downrightcorner= data2Tf(W,-H,roll1,pitch1,(M_PI-yaw1));
+    tf::Transform downleftcorner= data2Tf(-W,-H,roll1,pitch1,(M_PI+yaw1));
+
+      
+
+
+    tf::Transform Nav = odom2Tf(odometry_tmp) * odom2camera_; // product of NED base link pose and transform odom to left optical = transform NED origin to the left optical. 
+
+    tf::Transform Navupright=Nav*uprightcorner; // product of transform NED origin to left optical and transform from left optical to up right corner = transform NED origin to upright corner of image
+    tf::Transform Navupleft=Nav*upleftcorner;
+    tf::Transform Navdownright=Nav*downrightcorner; 
+    tf::Transform Navdownleft=Nav*downleftcorner;   
+    //recover odoms from global TFs of corners
+    nav_msgs::Odometry odometry_tmp4 = Tf2odom(Navupright); // recover odom. from TF
+    nav_msgs::Odometry odometry_tmp5 = Tf2odom(Navupleft); // recover odom. from TF
+    nav_msgs::Odometry odometry_tmp6 = Tf2odom(Navdownright); // recover odom. from TF
+    nav_msgs::Odometry odometry_tmp7 = Tf2odom(Navdownleft); // recover odom. from TF
+
+
+    double north2=odometry_tmp4.pose.pose.position.x ;
+    double east2=odometry_tmp4.pose.pose.position.y ;
+    double depth2=odometry_tmp4.pose.pose.position.z ;
+    
+    Ned ned_ = Ned(originlat, originlong, 0.0); // initialize NED origin
+
+    //const Eigen::Vector3d latlonh = ned_.ned2geodetic(pos);
+    double latiupright, loniupright, hupright; // get the Geodesic data of NED position with respect the NED origin.
+    ned_.ned2Geodetic(north2, east2, depth2, latiupright, loniupright, hupright); // lati and loni contain the Geodesic data corresponding to the NED position of the left optical.
+
+
+    north2=odometry_tmp5.pose.pose.position.x ;
+    east2=odometry_tmp5.pose.pose.position.y ;
+    depth2=odometry_tmp5.pose.pose.position.z ;
+    
+    ned_ = Ned(originlat, originlong, 0.0); // initialize NED origin
+
+    //const Eigen::Vector3d latlonh = ned_.ned2geodetic(pos);
+    double latiupleft, loniupleft, hupleft; // get the Geodesic data of NED position with respect the NED origin.
+    ned_.ned2Geodetic(north2, east2, depth2, latiupleft, loniupleft, hupleft); // lati and loni contain the Geodesic data
+
+
+
+    north2=odometry_tmp6.pose.pose.position.x ;
+    east2=odometry_tmp6.pose.pose.position.y ;
+    depth2=odometry_tmp6.pose.pose.position.z ;
+    
+    ned_ = Ned(originlat, originlong, 0.0); // initialize NED origin
+
+    //const Eigen::Vector3d latlonh = ned_.ned2geodetic(pos);
+    double latidownright, lonidownright, hdownright; // get the Geodesic data of NED position with respect the NED origin.
+    ned_.ned2Geodetic(north2, east2, depth2, latidownright, lonidownright, hdownright); // lati and loni contain the Geodesic data
+
+
+
+    north2=odometry_tmp7.pose.pose.position.x ;
+    east2=odometry_tmp7.pose.pose.position.y ;
+    depth2=odometry_tmp7.pose.pose.position.z ;
+    
+    ned_ = Ned(originlat, originlong, 0.0); // initialize NED origin
+
+    //const Eigen::Vector3d latlonh = ned_.ned2geodetic(pos);
+    double latidownleft, lonidownleft, hdownleft; // get the Geodesic data of NED position with respect the NED origin.
+    ned_.ned2Geodetic(north2, east2, depth2, latidownleft, lonidownleft, hdownleft); // lati and loni contain the Geodesic data
+
+
+
     nav_msgs::Odometry odometry_tmp2 = Tf2odom(Nav); // recover odom. from TF
     // convert this odometry NED msg into a NED message and then, from NED to Geodesic using the initial Lat/Long 
-    north=odometry_tmp2.pose.pose.position.x ;
-    east=odometry_tmp2.pose.pose.position.y ;
-    depth=odometry_tmp2.pose.pose.position.z ;
-    const Eigen::Vector3d pos(north, east, depth);
-    Ned ned_ = Ned(originlat, originlong, altitud); // initialize NED origin
+    north2=odometry_tmp2.pose.pose.position.x ;
+    east2=odometry_tmp2.pose.pose.position.y ;
+    depth2=odometry_tmp2.pose.pose.position.z ;
+    
+
+    ned_ = Ned(originlat, originlong, 0.0); // initialize NED origin
 
     //const Eigen::Vector3d latlonh = ned_.ned2geodetic(pos);
     double lati, loni, h; // get the Geodesic data of NED position with respect the NED origin.
-    ned_.ned2Geodetic(north, east, depth, lati, loni, h); // lati and loni contain the Geodesic data corresponding to the NED position of the left optical.
-    ROS_INFO_STREAM("[PreProcess]: Geodesic data corresponding to the NED pose of the left optical" << lati <<" // " <<  loni );
+    ned_.ned2Geodetic(north2, east2, depth2, lati, loni, h); // lati and loni contain the Geodesic data corresponding to the NED position of the left optical.
+    ROS_INFO_STREAM("[PreProcess]: Geodesic data corresponding to the NED pose of the left optical" << lati <<" // " <<  loni << "//" << h);
 
 
-
-
-
-
-    
 
 
     // Compute distance
@@ -185,7 +264,7 @@ namespace uware
       // Store odometry
       storeOdometry(ODOM_FILE, id_, stamp, odom);
       storeOdometry(OMAP_FILE,  id_, stamp, map);
-      storeNavSts(NAVSTS_FILE,id_, stamp, lati, loni);
+      storeNavSts(NAVSTS_FILE,id_, stamp, lati, loni, h, latiupright, loniupright, hupright, latiupleft, loniupleft, hupleft, latidownright, lonidownright, hdownright, latidownleft, lonidownleft, hdownleft);
 
       // --------------------------------
       tf::Matrix3x3 obase = odom.getBasis();
@@ -226,6 +305,11 @@ namespace uware
       ROS_INFO_STREAM("              Kp size: " << kp_size);
     }
   }
+
+
+
+
+
 
   bool PreProcess::createDirs()
   {
@@ -283,7 +367,7 @@ namespace uware
   }
 
 
-  void PreProcess::storeNavSts(string filename, int id, double stamp, float lat, float lon)
+  void PreProcess::storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, float latiupright, float lonupright, float hupright, float latupleft, float lonupleft, float hupleft, float latdownright, float londownright, float hdownright, float latdownleft, float londownleft, float hdownleft)
   {
     string navstatus_file = params_.outdir + "/" + filename;
     fstream f_navsts(navstatus_file.c_str(), ios::out | ios::app);
@@ -294,7 +378,25 @@ namespace uware
     stamp << "," <<
 
     lat << "," <<
-    lon << "," << endl;
+    lon << "," << 
+    h << "," << 
+
+    latiupright << "," <<
+    lonupright << "," << 
+    hupright << "," << 
+
+    latupleft << "," <<
+    lonupleft << "," << 
+    hupleft << "," << 
+
+    latdownright << "," <<
+    londownright << "," << 
+    hdownright << "," <<
+
+
+    latdownleft << "," <<
+    londownleft << "," << 
+    hdownleft << "," << endl;
 
     f_navsts.close();
   }
@@ -351,6 +453,22 @@ namespace uware
     r_img = r_img_ptr->image;
     return true;
   }
+
+
+  tf::Transform PreProcess::data2Tf(double  W, double  Y, double roll1, double pitch1, double yaw1){
+      tf::Quaternion odom_quat2; 
+      odom_quat2.setRPY(roll1, pitch1, yaw1); // set the quaternion from the roll,pitch and yaw of the NavSts NED orientation
+      odom_quat2.normalize();
+      geometry_msgs::Quaternion odom_quat_tmp3; 
+      tf::quaternionTFToMsg(odom_quat2, odom_quat_tmp3);
+      
+  
+      tf::Vector3 tf_translation(W, Y, 0);
+      tf::Quaternion tf_orientation(odom_quat_tmp3.x, odom_quat_tmp3.y, odom_quat_tmp3.z, odom_quat_tmp3.w);
+      tf::Transform uprightcor(tf_orientation, tf_translation);
+      return uprightcor; 
+  }
+
 
   tf::Transform PreProcess::odom2Tf(nav_msgs::Odometry odom_msg)
   {
