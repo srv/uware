@@ -56,7 +56,8 @@ int main(int argc, char **argv)
   message_filters::Subscriber<cola2_msgs::NavSts> navstatus_sub;
 
 
-////sensor_msgs::PointCloud2
+////sensor_msgs::PointCloud2.
+  /// syncro odometries, images, info-images, altitude and the nav status
   typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry,
                                                           nav_msgs::Odometry,
                                                           sensor_msgs::Image,
@@ -79,7 +80,7 @@ int main(int argc, char **argv)
   cloud_sub     .subscribe(nh, camera_topic_points2, 5);
   navstatus_sub     .subscribe(nh, navstatus_topic, 20);
 
-  // Sync callback
+  // Sync callback for all syncronized topics 
   sync.reset(new Sync(SyncPolicy(2500), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
   //sync.reset(new Sync(SyncPolicy(10), odom_sub, map_sub, left_sub, right_sub, left_info_sub, altitude_sub, right_info_sub, cloud_sub) );
 
