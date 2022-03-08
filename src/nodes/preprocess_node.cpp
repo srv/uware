@@ -94,7 +94,7 @@ int main(int argc, char **argv)
   ROS_INFO_STREAM("camera_right_info " << camera_right_info);
   ROS_INFO_STREAM("altitude_topic " << altitude_topic);
   ROS_INFO_STREAM("navstatus_topic " << navstatus_topic);
-  ROS_INFO_STREAM("odom_topic " << params.outdir);
+  ROS_INFO_STREAM("Output dir " << params.outdir);
 
   ros::spin();
   ros::shutdown();
