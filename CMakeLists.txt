@@ -17,7 +17,10 @@ elseif(COMPILER_SUPPORTS_CXX0X)
    add_definitions(-DCOMPILEDWITHC0X)
    message(STATUS "Using flag -std=c++0x.")
 else()
-   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+   #message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+   set(CMAKE_CXX_STANDARD 14)
+   add_definitions(-DCOMPILEDWITHC14)
+   message(STATUS "Using CMAKE_CXX_STANDARD")
 endif()
 
 

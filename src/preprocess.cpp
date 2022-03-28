@@ -286,7 +286,7 @@ namespace uware
       cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
 
       cv::FileStorage fs(params_.outdir + "/homographies/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
-      write(fs, "filename", "/home/xesc/tmp/mosaicing/images/" + Utils::id2str(id_) + ".jpg");
+      write(fs, "filename", params_.outdir + "/images/" + Utils::id2str(id_) + ".jpg");
       write(fs, "HO", HO);
       write(fs, "HM", HM);
       write(fs, "ALT", altitud);
