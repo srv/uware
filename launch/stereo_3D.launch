@@ -1,20 +1,17 @@
 <launch>
   
-  <arg name="suffix"          default=""/>
-
-  <arg name="calibrate" default="false"/>
   <param name="/use_sim_time" value="true"/>
   <arg name="camera1" default="/stereo_down"/>
-  <arg name="decimation" default="4" />
+  <arg name="decimation" default="2" />
   <arg name="nodelet_args" value="standalone image_proc/crop_decimate" />
 
-  <arg name="disparity_params" value="/home/turbot/postprocess_ws/src/uware/config/disparity_params_full_x4.yaml" />
+  <arg name="disparity_params" value="$(find uware)/config/disparity/disparity_params_full_x$(arg decimation).yaml" />
 
   <node pkg="nodelet" type="nodelet" name="image_proc_decimate_left_x$(arg decimation)" ns="$(arg camera1)" output="screen" respawn="true" args="$(arg nodelet_args)" >
-      <param name="decimation_x" value="$(arg decimation)" />
-      <param name="decimation_y" value="$(arg decimation)" />
-      <remap from="camera" to="left" />
-      <remap from="camera_out" to="scaled_x$(arg decimation)/left"/>
+    <param name="decimation_x" value="$(arg decimation)" />
+    <param name="decimation_y" value="$(arg decimation)" />
+    <remap from="camera" to="left" />
+    <remap from="camera_out" to="scaled_x$(arg decimation)/left"/>
   </node>
 
   <node pkg="nodelet" type="nodelet" name="image_proc_decimate_right_x$(arg decimation)" ns="$(arg camera1)" output="screen" respawn="true" args="$(arg nodelet_args)" >
@@ -23,14 +20,6 @@
     <remap from="camera" to="right" />
     <remap from="camera_out" to="scaled_x$(arg decimation)/right"/>
   </node>
-
-
-
-  <!--include file="$(find cola2_turbot)/launch/payload/stereo/stereo_pipeline.launch">
-    <arg name="stereo" value="/stereo_down" />
-    <arg name="launch_in_nuc" value="false" />
-  </include-->
-
 
   <!-- stereo image proc: debayer, rectification and 3D point clouds  --> 
 
@@ -46,8 +35,5 @@
     <rosparam file="$(arg disparity_params)"/>
     <param name="approximate_sync" value="true" />
   </node>
-
-
-
-  <!--node name="rviz" pkg="rviz" type="rviz"/--> 
+  
 </launch>

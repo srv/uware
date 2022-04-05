@@ -103,6 +103,7 @@ namespace uware
 
       // System initialized
       initialization_ = false;
+      ROS_INFO_STREAM("Max altitude (NODE): " << params_.max_altitude) ;
     }
 
     // Convert the pointcloud
@@ -261,45 +262,52 @@ namespace uware
     // Store odometry, images and pointclouds when required
     if (dist > params_.store_distance)
     {
-      // Stamp
-      double stamp = l_img_msg->header.stamp.toSec();
+      if (altitud < params_.max_altitude){
 
-      // Store cloud 
-      /*fbf commentted on 18/01/2021 uncomment of PC storage
-      string pc_filename = params_.outdir + "/" + PC_DIR + "/" + Utils::id2str(id_) + ".pcd";
-      pcl::io::savePCDFileBinary(pc_filename, *pcl_cloud);*/
+        ROS_INFO_STREAM("              Altitude: " << altitud << " m.") ;
 
-      // Store odometries and the Geodesic Data of view center and 4 corners. 
-      storeOdometry(ODOM_FILE, id_, stamp, odom);
-      storeOdometry(OMAP_FILE,  id_, stamp, map);
-      storeNavSts(NAVSTS_FILE,id_, stamp, lati, loni, h, latiupright, loniupright, hupright, latiupleft, loniupleft, hupleft, latidownright, lonidownright, hdownright, latidownleft, lonidownleft, hdownleft);
+        // Stamp
+        double stamp = l_img_msg->header.stamp.toSec();
 
-      // --------------------------------
-      tf::Matrix3x3 obase = odom.getBasis();
-      tf::Matrix3x3 mbase = map.getBasis();
-      double oyaw, myaw, dummy_1, dummy_2;
-      obase.getRPY(dummy_1, dummy_2, oyaw);
-      mbase.getRPY(dummy_1, dummy_2, myaw);
-      ROS_INFO("[PreProcess]: Register in CSV file.");
-      /// store the yaml file with odometries for later mosaicing 
-      cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
-      cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
+        // Store cloud 
+        /*fbf commentted on 18/01/2021 uncomment of PC storage
+        string pc_filename = params_.outdir + "/" + PC_DIR + "/" + Utils::id2str(id_) + ".pcd";
+        pcl::io::savePCDFileBinary(pc_filename, *pcl_cloud);*/
 
-      cv::FileStorage fs(params_.outdir + "/homographies/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
-      write(fs, "filename", params_.outdir + "/images/" + Utils::id2str(id_) + ".jpg");
-      write(fs, "HO", HO);
-      write(fs, "HM", HM);
-      write(fs, "ALT", altitud);
-      write(fs, "LAT", latitud);
-      write(fs, "LONG", longitud);
+        // Store odometries and the Geodesic Data of view center and 4 corners. 
+        storeOdometry(ODOM_FILE, id_, stamp, odom);
+        storeOdometry(OMAP_FILE,  id_, stamp, map);
+        storeNavSts(NAVSTS_FILE,id_, stamp, lati, loni, h, latiupright, loniupright, hupright, latiupleft, loniupleft, hupleft, latidownright, lonidownright, hdownright, latidownleft, lonidownleft, hdownleft);
 
-      fs.release();
-      // --------------------------------
+        // --------------------------------
+        tf::Matrix3x3 obase = odom.getBasis();
+        tf::Matrix3x3 mbase = map.getBasis();
+        double oyaw, myaw, dummy_1, dummy_2;
+        obase.getRPY(dummy_1, dummy_2, oyaw);
+        mbase.getRPY(dummy_1, dummy_2, myaw);
+        ROS_INFO("[PreProcess]: Register in CSV file.");
+        /// store the yaml file with odometries for later mosaicing 
+        cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
+        cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
+        cv::FileStorage fs(params_.outdir + "/homographies/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
+        write(fs, "filename", params_.outdir + "/images/" + Utils::id2str(id_) + ".jpg");
+        write(fs, "HO", HO);
+        write(fs, "HM", HM);
+        write(fs, "ALT", altitud);
+        write(fs, "LAT", latitud);
+        write(fs, "LONG", longitud);
 
-      // Store image information
-      cv::Mat l_img, r_img;
-      imgMsgToMat(*l_img_msg, *r_img_msg, l_img, r_img);
-      int kp_size = storeImages(l_img, r_img, stamp);
+        fs.release();
+        // --------------------------------
+
+        // Store image information
+        cv::Mat l_img, r_img;
+        imgMsgToMat(*l_img_msg, *r_img_msg, l_img, r_img);
+        int kp_size = storeImages(l_img, r_img, stamp);
+        ROS_INFO_STREAM("              Saving image") ;
+        ROS_INFO_STREAM("              Kp size: " << kp_size) ;
+
+      }
 
       // Update
       prev_odom_ = odom;
@@ -310,7 +318,7 @@ namespace uware
       ROS_INFO_STREAM("\n[PreProcess]: Storing pointcloud #" << id_);*/
       ROS_INFO_STREAM("              Dist to prev: " << dist << " m.");
    //   ROS_INFO_STREAM("              Cloud size: " << pcl_cloud->size());
-      ROS_INFO_STREAM("              Kp size: " << kp_size);
+      // ROS_INFO_STREAM("              Kp size: " << kp_size);
     }
   }
 

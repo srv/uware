@@ -70,6 +70,7 @@ public:
     bool use_2d_distance;     //!> Use 2D distance to calculate when store a new pointcloud
     double voxel_resolution;  //!> Voxel filter cloud resolution (m)
     double epipolar_th;       //!> Epipolar threshold for the stereo matching
+    double max_altitude ;      //!> Under this altitude the program save information   
 
     // Default settings
     Params () {
@@ -79,6 +80,7 @@ public:
       use_2d_distance   = false;
       voxel_resolution  = 0.01;
       epipolar_th       = 1.5;
+      max_altitude      = 4.5 ;
     }
   };
   
