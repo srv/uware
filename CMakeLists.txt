@@ -26,6 +26,7 @@ endif()
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   nav_msgs
   cola2_msgs
   ned_tools

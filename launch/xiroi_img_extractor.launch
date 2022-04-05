@@ -1,0 +1,37 @@
+<launch> 
+
+	<param name="use_sim_time" value="true"/>
+
+	<arg name="rate" default="2" />
+
+	<!-- <rosparam command="load" file="$(find uware)/config/georeferencer.yaml" /> -->
+
+
+	<!-- <arg name="bagfile" default="/DATA_C/bagfiles/turbot/2020_09_16/15_20_23/images_2020-09-16-15-20-24_0.bag
+								/DATA_C/bagfiles/turbot/2020_09_16/15_20_23/images_2020-09-16-15-36-56_1.bag
+								/DATA_C/bagfiles/turbot/2020_09_16/15_20_23/images_2020-09-16-15-53-26_2.bag
+								/DATA_C/bagfiles/turbot/2020_09_16/15_20_23/images_2020-09-16-16-09-54_3.bag"/> -->
+
+	
+	<arg name="bagfile" default="/DATA_C/bagfiles/turbot/2020_09_17/15_46_41/images_2020-09-17-15-46-42_0.bag
+								/DATA_C/bagfiles/turbot/2020_09_17/15_46_41/images_2020-09-17-16-12-41_1.bag
+								/DATA_C/bagfiles/turbot/2020_09_17/15_46_41/images_2020-09-17-16-38-38_2.bag
+								/DATA_C/bagfiles/turbot/2020_09_17/15_46_41/images_2020-09-17-17-04-36_3.bag
+								/DATA_C/bagfiles/turbot/2020_09_17/15_46_41/images_2020-09-17-17-36-54_4.bag"/>
+
+	<!-- <arg name="bagfile" default="/DATA_B/bagfiles/xiroi/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-13-34_0.bag
+								/DATA_B/bagfiles/xiroi/2022_01_31/xiroi_17_13_34/xiroi_topics_2022-01-31-17-13-34_0.bag"/> -->
+
+	<!-- arg clock clock -r 0.8  -->
+	<node pkg="rosbag" type="play" name="player" args=" -r $(arg rate) $(arg bagfile)" required="true" />
+
+	<node name="xiroi_img_extractor" pkg="uware" type="xiroi_image_extractor.py" output="screen">
+    	</node>
+
+	<!-- Stereo Processing -->
+  	<include file="$(find uware)/launch/stereo_3D.launch">
+    	<arg name="stereo" value="$(arg camera)" />
+		<arg name="decimation" value="1" />
+  	</include>
+
+</launch>

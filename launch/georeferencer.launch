@@ -1,0 +1,46 @@
+<launch> 
+
+	<arg name="rate" default="1.0" />
+	<arg name="camera" default="/stereo_down"/>
+	<arg name="dec" default="1"/>
+
+	<param name= "use_sim_time" value="true"/>
+	<rosparam command="load" file="$(find uware)/config/georeferencer.yaml" />
+
+
+	<!-- <arg name="bagfile" default="/DATA_B/bagfiles/xiroi/2022_01_31/xiroi_16_16_52/xiroi_images_2022-01-31-16-16-52_0.bag
+								 /DATA_B/bagfiles/xiroi/2022_01_31/xiroi_16_16_52/xiroi_images_2022-01-31-16-22-26_1.bag
+								 /DATA_B/bagfiles/xiroi/2022_01_31/xiroi_16_16_52/xiroi_images_2022-01-31-16-27-59_2.bag
+								 /DATA_B/bagfiles/xiroi/2022_01_31/xiroi_16_16_52/xiroi_images_2022-01-31-16-33-33_3.bag
+								 /DATA_B/bagfiles/xiroi/2022_01_31/xiroi_16_16_52/xiroi_images_2022-01-31-16-39-06_4.bag
+								 /DATA_B/bagfiles/xiroi/2022_01_31/xiroi_16_16_52/xiroi_images_2022-01-31-16-44-39_5.bag"/> -->
+
+	<arg name="bagfile" default="/DATA_C/bagfiles/InvHali/2020_09_17/12_29_34/images_2020-09-17-12-29-35_0.bag
+								/DATA_C/bagfiles/InvHali/2020_09_17/12_29_34/images_2020-09-17-12-54-53_1.bag
+								/DATA_C/bagfiles/InvHali/2020_09_17/12_29_34/images_2020-09-17-13-20-08_2.bag
+								/DATA_C/bagfiles/InvHali/2020_09_17/12_29_34/images_2020-09-17-13-45-24_3.bag
+								/DATA_C/bagfiles/InvHali/2020_09_17/12_29_34/images_2020-09-17-14-10-43_4.bag
+								/DATA_C/bagfiles/InvHali/2020_09_17/12_29_34/topics_2020-09-17-12-29-35_0.bag"/>
+
+	<!-- <arg name = "bagfile" default = "/home/uib/bagfiles/portals/2021_02_25/15_56_25/images_2021-02-25-15-56-26_0.bag
+									/home/uib/bagfiles/portals/2021_02_25/15_56_25/images_2021-02-25-16-02-45_1.bag
+									/home/uib/bagfiles/portals/2021_02_25/15_56_25/images_2021-02-25-16-09-05_2.bag
+									/home/uib/bagfiles/portals/2021_02_25/15_56_25/images_2021-02-25-16-15-24_3.bag
+									/home/uib/bagfiles/portals/2021_02_25/15_56_25/images_2021-02-25-16-21-43_4.bag
+									/home/uib/bagfiles/portals/2021_02_25/15_56_25/images_2021-02-25-16-28-03_5.bag
+									/home/uib/bagfiles/portals/2021_02_25/15_56_25/topics_2021-02-25-15-56-37_0.bag"/> -->
+	
+	<!-- arg clock clock -r 0.8  -->
+	<node pkg="rosbag" type="play" name="player" args="-d 1 -r $(arg rate) $(arg bagfile)" required="true" />
+
+	<!-- Stereo Processing -->
+  	<include file="$(find uware)/launch/stereo_3D.launch">
+    	<arg name="stereo" value="$(arg camera)" />
+		<arg name="decimation" value="$(arg dec)" />
+  	</include>
+
+	<node name="georeferencer" pkg="uware" type="img_georeferencer.py" output="screen">
+		<remap from = "image_rect_color" to = "$(arg camera)/scaled_x$(arg dec)/left/image_rect_color"/>
+    </node>
+
+</launch>

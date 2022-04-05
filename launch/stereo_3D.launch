@@ -1,20 +1,20 @@
 <launch>
   
   <param name="/use_sim_time" value="true"/>
-  <arg name="camera1" default="/stereo_down"/>
+  <arg name="stereo" default="/stereo_down"/>
   <arg name="decimation" default="2" />
   <arg name="nodelet_args" value="standalone image_proc/crop_decimate" />
 
   <arg name="disparity_params" value="$(find uware)/config/disparity/disparity_params_full_x$(arg decimation).yaml" />
 
-  <node pkg="nodelet" type="nodelet" name="image_proc_decimate_left_x$(arg decimation)" ns="$(arg camera1)" output="screen" respawn="true" args="$(arg nodelet_args)" >
+  <node pkg="nodelet" type="nodelet" name="image_proc_decimate_left_x$(arg decimation)" ns="$(arg stereo)" output="screen" respawn="true" args="$(arg nodelet_args)" >
     <param name="decimation_x" value="$(arg decimation)" />
     <param name="decimation_y" value="$(arg decimation)" />
     <remap from="camera" to="left" />
     <remap from="camera_out" to="scaled_x$(arg decimation)/left"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="image_proc_decimate_right_x$(arg decimation)" ns="$(arg camera1)" output="screen" respawn="true" args="$(arg nodelet_args)" >
+  <node pkg="nodelet" type="nodelet" name="image_proc_decimate_right_x$(arg decimation)" ns="$(arg stereo)" output="screen" respawn="true" args="$(arg nodelet_args)" >
     <param name="decimation_x" value="$(arg decimation)" />
     <param name="decimation_y" value="$(arg decimation)" />
     <remap from="camera" to="right" />
@@ -22,18 +22,11 @@
   </node>
 
   <!-- stereo image proc: debayer, rectification and 3D point clouds  --> 
-
-  <node pkg="stereo_image_proc" type="stereo_image_proc" name="image_proc_left" respawn="true" output="screen">
-    <remap from="left/image_raw" to="$(arg camera1)/scaled_x$(arg decimation)/left/image_raw"/>
-    <remap from="left/camera_info" to="$(arg camera1)/scaled_x$(arg decimation)/left/camera_info"/>
-    <remap from="left/image_rect_color" to="$(arg camera1)/scaled_x$(arg decimation)/left/image_rect_color"/>
-    <remap from="right/image_raw" to="$(arg camera1)/scaled_x$(arg decimation)/right/image_raw"/>
-    <remap from="right/camera_info" to="$(arg camera1)/scaled_x$(arg decimation)/right/camera_info"/>
-    <remap from="right/image_rect_color" to="$(arg camera1)/scaled_x$(arg decimation)/right/image_rect_color"/>
-    <remap from="disparity" to="$(arg camera1)/scaled_x$(arg decimation)/disparity"/>
-    <remap from="points2" to="$(arg camera1)/scaled_x$(arg decimation)/points2"/>
-    <rosparam file="$(arg disparity_params)"/>
-    <param name="approximate_sync" value="true" />
-  </node>
+  <group ns="$(arg stereo)/scaled_x$(arg decimation)" >
+    <node pkg="stereo_image_proc" type="stereo_image_proc" name="image_proc_left" respawn="true" output="screen">
+      <rosparam file="$(arg disparity_params)"/>
+      <param name="approximate_sync" value="true" />
+    </node>
+  </group>
   
 </launch>
