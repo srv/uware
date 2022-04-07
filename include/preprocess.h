@@ -70,7 +70,7 @@ public:
     bool use_2d_distance;     //!> Use 2D distance to calculate when store a new pointcloud
     double voxel_resolution;  //!> Voxel filter cloud resolution (m)
     double epipolar_th;       //!> Epipolar threshold for the stereo matching
-    double max_altitude ;      //!> Under this altitude the program save information   
+    double max_altitude ;     //!> Under this altitude the program save information   
 
     // Default settings
     Params () {
@@ -82,6 +82,21 @@ public:
       epipolar_th       = 1.5;
       max_altitude      = 4.5 ;
     }
+  };
+
+  struct LatLonAltitude
+  {
+    double lat;
+    double lon;
+    double h ; 
+
+    LatLonAltitude()
+    {
+      lat = 0 ;
+      lon = 0 ;
+      h = 0 ;
+    }
+
   };
   
   /** \brief Set class params
@@ -138,6 +153,8 @@ protected:
 
   void storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, float latiupright, float lonupright, float hupright, float latupleft, float lonupleft, float hupleft, float latdownright, float londownright, float hdownright, float latdownleft, float londownleft, float hdownleft);
 
+  void storeLatLonImages(string filename, int id, float lat, float lon, float h, bool init) ; 
+
   /** \brief Store image data into file
    * @return number of left keypoints
    * \param left image
@@ -177,6 +194,8 @@ protected:
                         string camera_frame_id,
                         tf::StampedTransform &transform);
 
+  LatLonAltitude ned2Geo(tf::Transform nav_tf) ;
+
   /** \brief Filters a pointcloud
    * @return filtered cloud
    * \param input cloud
@@ -211,6 +230,7 @@ private:
   float baseline_; //!> Stereo baseline multiplied by fx.
                               //!< reference frame the AUV is in
 
+  Ned* ned_;
 
 };
 

@@ -79,7 +79,7 @@ int main(int argc, char **argv)
   right_info_sub.subscribe(nh, camera_right_info, 5);
   altitude_sub  .subscribe(nh, altitude_topic, 5);
   cloud_sub     .subscribe(nh, camera_topic_points2, 5);
-  navstatus_sub     .subscribe(nh, navstatus_topic, 20);
+  navstatus_sub .subscribe(nh, navstatus_topic, 20);
 
   // Sync callback for all syncronized topics 
   sync.reset(new Sync(SyncPolicy(20), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
