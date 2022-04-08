@@ -20,8 +20,8 @@ namespace uware
 
   //const sensor_msgs::PointCloud2ConstPtr& cloud_msg
   void PreProcess::callback(
-      const nav_msgs::Odometry::ConstPtr& odom_msg,
-      const nav_msgs::Odometry::ConstPtr& map_msg,
+      // const nav_msgs::Odometry::ConstPtr& odom_msg,
+      // const nav_msgs::Odometry::ConstPtr& map_msg,
       const sensor_msgs::ImageConstPtr& l_img_msg,
       const sensor_msgs::ImageConstPtr& r_img_msg,
       const sensor_msgs::CameraInfoConstPtr& l_info_msg,
@@ -30,8 +30,8 @@ namespace uware
       const cola2_msgs::NavSts::ConstPtr& navstatus_msg)
   {
     double altitud = altitude_msg->range;
-    float latitud = navstatus_msg->global_position.latitude; //// lat/long of Turbot base link
-    float longitud = navstatus_msg->global_position.longitude;
+    // float latitud = navstatus_msg->global_position.latitude; //// lat/long of Turbot base link
+    // float longitud = navstatus_msg->global_position.longitude;
     float north = navstatus_msg->position.north; //// NED pose of Turbot base link, in translation and rotation, with respect to NED origin.
     float east = navstatus_msg->position.east; 
     float depth = navstatus_msg->position.depth;
@@ -55,14 +55,14 @@ namespace uware
     float body_velocityY = navstatus_msg->body_velocity.y;
     float body_velocityZ = navstatus_msg->body_velocity.z;
 
-    ROS_INFO_STREAM("[PreProcess]: latitude and longitude of base link " << latitud <<" // " <<  longitud );
+    // ROS_INFO_STREAM("[PreProcess]: latitude and longitude of base link " << latitud <<" // " <<  longitud );
     
     // First iteration
     ROS_INFO("[PreProcess]: Processing the Inputs Callback.");
     if (initialization_)
     {
-      // Transformation between odometry child frame (turbot base link) and camera frame (left optical). odom2camera gives the transform between the Turbot base link and the left optical
-      if (!getOdom2CameraTf(odom_msg->child_frame_id, l_img_msg->header.frame_id, odom2camera_))
+      // Transformation between turbot base link and camera frame (left optical). odom2camera gives the transform between the Turbot base link and the left optical
+      if (!getOdom2CameraTf(params_.base_link_frame_id, l_img_msg->header.frame_id, odom2camera_))
       {
         ROS_WARN("[PreProcess]: Impossible to transform odometry to camera frame.");
         return;
@@ -127,8 +127,8 @@ namespace uware
     }*/
 
     // Convert odometry (map and odom) to camera frame (left optical). In this way, we have the motion of the lens instead of the robot motion.   
-    tf::Transform odom = odom2Tf(*odom_msg) * odom2camera_;
-    tf::Transform map  = odom2Tf(*map_msg) * odom2camera_;
+    // tf::Transform odom = odom2Tf(*odom_msg) * odom2camera_;
+    // tf::Transform map  = odom2Tf(*map_msg) * odom2camera_;
 
     /* Transform NED data obtained with respect to the turbot base_link to the left camera optical. Then, convert from NED to Geodesical to obtain the lat/long of
     the image instead of lat/log of the turbot baselink */
@@ -150,7 +150,7 @@ namespace uware
     tf::quaternionTFToMsg(odom_quat, odom_quat_tmp); // transform the tf::quaternion into a geometry message Quaternion
     odometry_tmp.pose.pose.orientation = odom_quat_tmp; // put it into the orientation of the temporal odometry message
     //set the velocity of the temp. odom. message with the vel. of the NavSts.
-    odometry_tmp.child_frame_id = "turbot/base_link";
+    odometry_tmp.child_frame_id = params_.base_link_frame_id;
     odometry_tmp.twist.twist.linear.x = body_velocityX;
     odometry_tmp.twist.twist.linear.y = body_velocityY;
     odometry_tmp.twist.twist.linear.z = body_velocityZ;
@@ -161,31 +161,31 @@ namespace uware
     
     double roll1 = 0, pitch1 = 0, yaw1 = angle; 
     //transform (tf format) between view (image to space) center to the 4 corners. 
-    tf::Transform uprightcorner = data2Tf(W, H, roll1, pitch1, yaw1);
-    tf::Transform upleftcorner = data2Tf(-W, H, roll1, pitch1, -yaw1);
-    tf::Transform downrightcorner = data2Tf(W, -H, roll1, pitch1, (M_PI-yaw1));
-    tf::Transform downleftcorner = data2Tf(-W, -H, roll1, pitch1, (M_PI+yaw1));
+    tf::Transform uprightCorner_tf = data2Tf(W, H, roll1, pitch1, yaw1);
+    tf::Transform upleftCorner_tf = data2Tf(-W, H, roll1, pitch1, -yaw1);
+    tf::Transform downrightCorner_tf = data2Tf(W, -H, roll1, pitch1, (M_PI-yaw1));
+    tf::Transform downleftCorner_tf = data2Tf(-W, -H, roll1, pitch1, (M_PI+yaw1));
 
     /// transform the odometry tmp message, which contains the NED Turbot base Link pose to the left optical frame. The result is the NED pose of the left optical with respect to the NED origin. 
 
-    tf::Transform Nav = odom2Tf(odometry_tmp) * odom2camera_; // product of NED base link pose and transform base link to left optical = transform NED origin to the left optical. 
+    tf::Transform cameraMap_tf = odom2Tf(odometry_tmp) * odom2camera_; // product of NED base link pose and transform base link to left optical = transform NED origin to the left optical. 
 
     // transform NED base link pose to left optical (which can be assumed as being the image center) 
     // and tafterwards transform from left optical (image center) to corners. The results are the transforms from NED origin to all view corners
 
-    tf::Transform Navupright_tf = Nav * uprightcorner; 
-    tf::Transform Navupleft_tf = Nav * upleftcorner;
-    tf::Transform Navdownright_tf = Nav * downrightcorner; 
-    tf::Transform Navdownleft_tf = Nav * downleftcorner;
+    tf::Transform uprightMap_tf = cameraMap_tf * uprightCorner_tf; 
+    tf::Transform upleftMap_tf = cameraMap_tf * upleftCorner_tf;
+    tf::Transform downrightMap_tf = cameraMap_tf * downrightCorner_tf; 
+    tf::Transform downleftMap_tf = cameraMap_tf * downleftCorner_tf;
 
     // Center and corners Lat Lons
-    LatLonAltitude uprightcorner_latlon = ned2Geo(Navupright_tf) ;
-    LatLonAltitude upleftcornercorner_latlon = ned2Geo(Navupleft_tf) ;
-    LatLonAltitude downrightcornercorner_latlon = ned2Geo(Navdownright_tf) ;
-    LatLonAltitude downleftcornercorner_latlon = ned2Geo(Navdownleft_tf) ;
-    LatLonAltitude center_latlon = ned2Geo(Nav) ;
+    LatLonAltitude uprightLatLon = ned_tf2Geo(uprightMap_tf) ;
+    LatLonAltitude upleftLatlon = ned_tf2Geo(upleftMap_tf) ;
+    LatLonAltitude downrightLatlon = ned_tf2Geo(downrightMap_tf) ;
+    LatLonAltitude downleftLatlon = ned_tf2Geo(downleftMap_tf) ;
+    LatLonAltitude centerLatlon = ned_tf2Geo(cameraMap_tf) ;
 
-    ROS_INFO_STREAM("[PreProcess]: Geodesic data corresponding to the NED pose of the left optical. Lat: " << center_latlon.lat <<" Lon: " <<  center_latlon.lon << " Altitude: " << center_latlon.h);
+    ROS_INFO_STREAM("[PreProcess]: Geodesic data corresponding to the NED pose of the left optical. Lat: " << centerLatlon.lat <<" Lon: " <<  centerLatlon.lon << " Altitude: " << centerLatlon.h);
 
     // Compute distance
     double dist;
@@ -196,7 +196,7 @@ namespace uware
     }
     else
     {
-      dist = calcDist(prev_odom_, odom, params_.use_2d_distance);
+      dist = calcDist(cameraMap_tf_prev_, cameraMap_tf, params_.use_2d_distance);
     }
 
     ROS_INFO_STREAM("              Altitude: " << altitud << " m.") ;
@@ -214,33 +214,36 @@ namespace uware
         pcl::io::savePCDFileBinary(pc_filename, *pcl_cloud);*/
 
         // Store odometries and the Geodesic Data of view center and 4 corners. 
-        storeOdometry(ODOM_FILE, id_, stamp, odom);
-        storeOdometry(OMAP_FILE,  id_, stamp, map);
+        // storeOdometry(ODOM_FILE, id_, stamp, odom);
+        storeOdometry(OMAP_FILE,  id_, stamp, cameraMap_tf);
         storeNavSts(NAVSTS_FILE, id_, stamp, 
-                    center_latlon.lat, center_latlon.lon, center_latlon.h, 
-                    uprightcorner_latlon.lat, uprightcorner_latlon.lon, uprightcorner_latlon.h, 
-                    upleftcornercorner_latlon.lat, upleftcornercorner_latlon.lon, upleftcornercorner_latlon.h,
-                    downrightcornercorner_latlon.lat, downrightcornercorner_latlon.lon, downrightcornercorner_latlon.h,
-                    downleftcornercorner_latlon.lat, downleftcornercorner_latlon.lon, downleftcornercorner_latlon.h);
-        storeLatLonImages(LATLON_FILE, id_, center_latlon.lat, center_latlon.lon, altitud, initialization_) ;
+                    centerLatlon.lat, centerLatlon.lon, centerLatlon.h, 
+                    uprightLatLon.lat, uprightLatLon.lon, uprightLatLon.h, 
+                    upleftLatlon.lat, upleftLatlon.lon, upleftLatlon.h,
+                    downrightLatlon.lat, downrightLatlon.lon, downrightLatlon.h,
+                    downleftLatlon.lat, downleftLatlon.lon, downleftLatlon.h);
+        storeLatLonImages(LATLON_FILE, id_, centerLatlon.lat, centerLatlon.lon, altitud, initialization_) ;
 
         // --------------------------------
-        tf::Matrix3x3 obase = odom.getBasis();
-        tf::Matrix3x3 mbase = map.getBasis();
+        // tf::Matrix3x3 obase = odom.getBasis();
+        tf::Matrix3x3 mbase = cameraMap_tf.getBasis();
         double oyaw, myaw, dummy_1, dummy_2;
-        obase.getRPY(dummy_1, dummy_2, oyaw);
+        // obase.getRPY(dummy_1, dummy_2, oyaw);
         mbase.getRPY(dummy_1, dummy_2, myaw);
         ROS_INFO("[PreProcess]: Register in CSV file.");
         /// store the yaml file with odometries for later mosaicing 
-        cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
-        cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), map.getOrigin().x(), sin(myaw),  cos(myaw), map.getOrigin().y(), 0, 0, 1.0);
+        // cv::Mat HO = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
+        cv::Mat HM = (cv::Mat_<double>(3,3) << cos(myaw), -sin(myaw), cameraMap_tf.getOrigin().x(), sin(myaw),  cos(myaw), cameraMap_tf.getOrigin().y(), 0, 0, 1.0);
         cv::FileStorage fs(params_.outdir + "/homographies/" + Utils::id2str(id_) + ".yaml", cv::FileStorage::WRITE);
         write(fs, "filename", params_.outdir + "/images/" + Utils::id2str(id_) + ".jpg");
-        write(fs, "HO", HO);
+        // write(fs, "HO", HO);
         write(fs, "HM", HM);
         write(fs, "ALT", altitud);
-        write(fs, "LAT", latitud);
-        write(fs, "LONG", longitud);
+        write(fs, "LAT", centerLatlon.lat);
+        write(fs, "LONG", centerLatlon.lon);
+
+        // write(fs, "LAT", latitud);
+        // write(fs, "LONG", longitud);
 
         fs.release();
         // --------------------------------
@@ -255,7 +258,7 @@ namespace uware
       }
 
       // Update
-      prev_odom_ = odom;
+      cameraMap_tf_prev_ = cameraMap_tf;
       id_++;
 
       // Log
@@ -532,7 +535,7 @@ namespace uware
   }
 
 
-  PreProcess::LatLonAltitude PreProcess::ned2Geo(tf::Transform nav_tf)
+  PreProcess::LatLonAltitude PreProcess::ned_tf2Geo(tf::Transform nav_tf)
   {
     LatLonAltitude s ;
     nav_msgs::Odometry odom = Tf2odom(nav_tf) ;

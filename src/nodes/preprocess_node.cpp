@@ -24,8 +24,8 @@ int main(int argc, char **argv)
   // Read parameters
   PreProcess::Params params;
   string odom_topic, map_topic, altitude_topic, camera_left_topic, camera_right_topic, camera_left_info, camera_right_info, camera_topic_points2, outdir, navstatus_topic;
-  nhp.param("odom_topic",           odom_topic,                 string(""));
-  nhp.param("map_topic",            map_topic,                  string(""));
+  // nhp.param("odom_topic",           odom_topic,                 string(""));
+  // nhp.param("map_topic",            map_topic,                  string(""));
   nhp.param("camera_left_topic",    camera_left_topic,          string(""));
   nhp.param("camera_right_topic",   camera_right_topic,         string(""));
   nhp.param("altitude_topic",       altitude_topic,             string(""));
@@ -51,16 +51,17 @@ int main(int argc, char **argv)
   image_transport::SubscriberFilter left_sub, right_sub;
   message_filters::Subscriber<sensor_msgs::CameraInfo> left_info_sub, right_info_sub;
   message_filters::Subscriber<sensor_msgs::Range> altitude_sub;
-  message_filters::Subscriber<nav_msgs::Odometry> odom_sub;
-  message_filters::Subscriber<nav_msgs::Odometry> map_sub;
+  // message_filters::Subscriber<nav_msgs::Odometry> odom_sub;
+  // message_filters::Subscriber<nav_msgs::Odometry> map_sub;
   message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub;
   message_filters::Subscriber<cola2_msgs::NavSts> navstatus_sub;
 
 
 ////sensor_msgs::PointCloud2.
   /// syncro odometries, images, info-images, altitude and the nav status
-  typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry,
-                                                          nav_msgs::Odometry,
+  typedef message_filters::sync_policies::ApproximateTime<
+                                                          // nav_msgs::Odometry,
+                                                          // nav_msgs::Odometry,
                                                           sensor_msgs::Image,
                                                           sensor_msgs::Image,
                                                           sensor_msgs::CameraInfo,
@@ -71,8 +72,8 @@ int main(int argc, char **argv)
 
   // Setup the sync
   boost::shared_ptr<Sync> sync;
-  odom_sub      .subscribe(nh, odom_topic, 20);
-  map_sub       .subscribe(nh, map_topic, 20);
+  // odom_sub      .subscribe(nh, odom_topic, 20);
+  // map_sub       .subscribe(nh, map_topic, 20);
   left_sub      .subscribe(it, camera_left_topic, 5);
   right_sub     .subscribe(it, camera_right_topic, 5);
   left_info_sub .subscribe(nh, camera_left_info,  5);
@@ -82,13 +83,15 @@ int main(int argc, char **argv)
   navstatus_sub .subscribe(nh, navstatus_topic, 20);
 
   // Sync callback for all syncronized topics 
-  sync.reset(new Sync(SyncPolicy(20), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
+  // sync.reset(new Sync(SyncPolicy(20), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
+  sync.reset(new Sync(SyncPolicy(20), left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
   //sync.reset(new Sync(SyncPolicy(10), odom_sub, map_sub, left_sub, right_sub, left_info_sub, altitude_sub, right_info_sub, cloud_sub) );
 
-  sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6, _7, _8));
+  // sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6, _7, _8));
+  sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6));
 
-  ROS_INFO_STREAM("odom_topic: " << odom_topic);
-  ROS_INFO_STREAM("map_topic: " << map_topic);
+  // ROS_INFO_STREAM("odom_topic: " << odom_topic);
+  // ROS_INFO_STREAM("map_topic: " << map_topic);
   ROS_INFO_STREAM("camera_left_topic: " << camera_left_topic);
   ROS_INFO_STREAM("camera_right_topic: " << camera_right_topic);
   ROS_INFO_STREAM("camera_left_info: " << camera_left_info);

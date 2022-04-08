@@ -64,23 +64,25 @@ public:
 
   struct Params
   {
-    string outdir;            //!> Output directory
-    int min_cloud_size;       //!> Minimum cloud size (number of points)
-    double store_distance;    //!> Distance at which pointclouds are stored (m)
-    bool use_2d_distance;     //!> Use 2D distance to calculate when store a new pointcloud
-    double voxel_resolution;  //!> Voxel filter cloud resolution (m)
-    double epipolar_th;       //!> Epipolar threshold for the stereo matching
-    double max_altitude ;     //!> Under this altitude the program save information   
+    string outdir;              //!> Output directory
+    string base_link_frame_id;  //!> String with the name of the base_link frame
+    int min_cloud_size;         //!> Minimum cloud size (number of points)
+    double store_distance;      //!> Distance at which pointclouds are stored (m)
+    bool use_2d_distance;       //!> Use 2D distance to calculate when store a new pointcloud
+    double voxel_resolution;    //!> Voxel filter cloud resolution (m)
+    double epipolar_th;         //!> Epipolar threshold for the stereo matching
+    double max_altitude ;       //!> Under this altitude the program save information   
 
     // Default settings
     Params () {
-      outdir            = "";
-      min_cloud_size    = 100;
-      store_distance    = 0.5;
-      use_2d_distance   = false;
-      voxel_resolution  = 0.01;
-      epipolar_th       = 1.5;
-      max_altitude      = 4.5 ;
+      outdir              = "";
+      base_link_frame_id  = "/turbot/base_link" ;
+      min_cloud_size      = 100;
+      store_distance      = 0.5;
+      use_2d_distance     = false;
+      voxel_resolution    = 0.01;
+      epipolar_th         = 1.5;
+      max_altitude        = 4.5 ;
     }
   };
 
@@ -117,8 +119,9 @@ public:
    * \param r_info right stereo info message of type sensor_msgs::CameraInfo
    * \param pointcloud
    */// const sensor_msgs::PointCloud2ConstPtr& cloud_msg
-  void callback(const nav_msgs::Odometry::ConstPtr& odom_msg,
-                const nav_msgs::Odometry::ConstPtr& map_msg,
+  void callback(
+                // const nav_msgs::Odometry::ConstPtr& odom_msg,
+                // const nav_msgs::Odometry::ConstPtr& map_msg,
                 const sensor_msgs::ImageConstPtr& l_img_msg,
                 const sensor_msgs::ImageConstPtr& r_img_msg,
                 const sensor_msgs::CameraInfoConstPtr& l_info_msg,
@@ -194,7 +197,7 @@ protected:
                         string camera_frame_id,
                         tf::StampedTransform &transform);
 
-  LatLonAltitude ned2Geo(tf::Transform nav_tf) ;
+  LatLonAltitude ned_tf2Geo(tf::Transform nav_tf) ;
 
   /** \brief Filters a pointcloud
    * @return filtered cloud
@@ -218,7 +221,7 @@ private:
 
   uint id_; //!> Frame id
 
-  tf::Transform prev_odom_; //!> Previous odometry
+  tf::Transform cameraMap_tf_prev_; //!> Previous odometry
 
   // ORB extractors
   orb_utils::ORBextractor* l_ORB_extractor_;
