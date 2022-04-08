@@ -373,14 +373,10 @@ namespace uware
 
     if (init == true) {
 
-      ROS_INFO("HELLO THERE");
-      f_latlon_file << "Hola" << "\n";
       f_latlon_file << "#img_name" << ";" << "latitude" ";" << "longitude" << ";" << "altitude" << ";" << "\n" ;
 
     } else {
 
-      ROS_INFO("GENERAL KENOBI");
-      f_latlon_file << "#img_name" << ";" << "latitude" ";" << "longitude" << ";" << "altitude" << ";" << "\n" ;
       f_latlon_file << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << ";" <<
       lat << ";" << lon << ";" << h << ";" << "\n" ;
       
