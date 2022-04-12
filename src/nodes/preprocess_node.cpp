@@ -24,6 +24,7 @@ int main(int argc, char **argv)
   // Read parameters
   PreProcess::Params params;
   string odom_topic, map_topic, altitude_topic, camera_left_topic, camera_right_topic, camera_left_info, camera_right_info, camera_topic_points2, outdir, navstatus_topic;
+  int approxTime ;
   // nhp.param("odom_topic",           odom_topic,                 string(""));
   // nhp.param("map_topic",            map_topic,                  string(""));
   nhp.param("camera_left_topic",    camera_left_topic,          string(""));
@@ -40,6 +41,7 @@ int main(int argc, char **argv)
   nhp.param("epipolar_th",          params.epipolar_th,         1.5);
   nhp.param("navstatus_topic",      navstatus_topic,            string(""));
   nhp.param("max_altitude",         params.max_altitude,        4.5);
+  nhp.param("approximate_time",     approxTime,                 20);
 
 
   // Init the node
@@ -84,7 +86,7 @@ int main(int argc, char **argv)
 
   // Sync callback for all syncronized topics 
   // sync.reset(new Sync(SyncPolicy(20), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
-  sync.reset(new Sync(SyncPolicy(20), left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
+  sync.reset(new Sync(SyncPolicy(approxTime), left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
   //sync.reset(new Sync(SyncPolicy(10), odom_sub, map_sub, left_sub, right_sub, left_info_sub, altitude_sub, right_info_sub, cloud_sub) );
 
   // sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6, _7, _8));
@@ -100,6 +102,7 @@ int main(int argc, char **argv)
   ROS_INFO_STREAM("navstatus_topic: " << navstatus_topic);
   ROS_INFO_STREAM("Output dir: " << params.outdir);
   ROS_INFO_STREAM("Max altitude: " << params.max_altitude) ;
+  ROS_INFO_STREAM("Approximate time: " << approxTime) ;
 
   ros::spin();
   ros::shutdown();
