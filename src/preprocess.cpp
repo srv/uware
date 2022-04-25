@@ -358,12 +358,12 @@ namespace uware
                                       float latmiddleup, float lonmiddleup, float hmiddleup,
                                       bool init)
   {
-    string navstatus_file = params_.outdir + "/" + filename;
-    fstream f_navsts(navstatus_file.c_str(), ios::out | ios::app);
+    string latlon_file = params_.outdir + "/" + filename;
+    fstream f_latlon_file(latlon_file.c_str(), ios::out | ios::app);
 
     if (init == true){
 
-      f_navsts << "#id" << "," << "stamp" << ","
+      f_latlon_file << "#id" << "," << "stamp" << ","
       << "latitude" << "," << "longitude" << "," << "altitude" << ","
       << "uprightlat" << "," << "uprightlon" << "," << "uprighth" << ","
       << "upleftlat" << "," << "upleftlon" << "," << "uplefth" << ","
@@ -373,7 +373,7 @@ namespace uware
 
     } else {
 
-      f_navsts << fixed <<
+      f_latlon_file << fixed <<
       setprecision(15) <<
       Utils::id2str(id) << "," <<
       stamp << "," <<
@@ -404,27 +404,27 @@ namespace uware
 
     }
 
-    f_navsts.close();
+    f_latlon_file.close();
   }
 
   void PreProcess::storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, bool init)
   {
-    string latlon_file = params_.outdir + "/" + filename;
-    fstream f_latlon_file(latlon_file.c_str(), ios::out | ios::app);
+    string navstatus_file = params_.outdir + "/" + filename;
+    fstream f_navsts(navstatus_file.c_str(), ios::out | ios::app);
 
     if (init == true) {
 
-      f_latlon_file << "#img_name" << "," << "stamp" << "latitude" "," << "longitude" << "," << "altitude" << "," << "\n" ;
+      f_navsts << "#img_name" << "," << "stamp" << "latitude" "," << "longitude" << "," << "altitude" << "," << "\n" ;
 
     } else {
 
-      f_latlon_file << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << "," <<
+      f_navsts << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << "," <<
       stamp << "," << lat << "," << lon << "," << h << "," << "\n" ;
       
 
     }
 
-    f_latlon_file.close() ;
+    f_navsts.close() ;
 
   }
 

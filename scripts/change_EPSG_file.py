@@ -16,7 +16,6 @@ def changeEPSG(EPSG_in, EPSG_out, x_in, y_in):
 
 if __name__ == '__main__':
 
-    df_epsg3857 = pd.DataFrame(columns = ["lon, lat"])
     EPSG_in = 'epsg:4326' # Lat-Lon
     EPSG_out = 'epsg:3857' # GoogleMapsSatellite
 
@@ -24,27 +23,70 @@ if __name__ == '__main__':
     parser.add_argument("path", help = "Path to .CSV")
     args = parser.parse_args()
 
-    df = pd.read_csv(args.path, delimiter = ";")
+    df = pd.read_csv(args.path, delimiter = ",", index_col = False)
 
     print(df)
 
-    df_aux = df.iloc[:, 1:3]
+    print(len(df.columns))
 
-    print(df_aux.iloc[0, 0])
-  
+    df_aux = df.iloc[:, 2:len(df.columns)]
 
+    print(df_aux)
+
+    aux_list = list(df_aux.columns)
+    add_values = {}
+    df_epsg3857 = pd.DataFrame(columns = aux_list)
+    
     for i in range(len(df_aux)):
-        #lon   #lat                                  #lon               #lat
-        x_out, y_out = changeEPSG(EPSG_in, EPSG_out, df_aux.iloc[i, 1], df_aux.iloc[i, 0],)
+        j = 0
 
-        add_values = {'lon':x_out, 'lat':y_out}
+        while j < len(df_aux.columns):
+            # print(j)
+            x_out, y_out = changeEPSG(EPSG_in, EPSG_out, df_aux.iloc[i, j + 1], df_aux.iloc[i, j])
+            add_values.update([(aux_list[j + 1], x_out), (aux_list[j], y_out)])
+            j += 3
+        
         add_row = pd.Series(add_values)
         df_epsg3857 = df_epsg3857.append(add_row, ignore_index = True)
 
         if i % 100 == 0:
             print(i)
 
-    df_epsg3857.to_csv("/home/uib/georeferenced/DecimationX4_StoreDistance0_55/test.csv", index = False)
+    df_epsg3857.insert(0, 'id', df['#id'])
+    df_epsg3857.to_csv("/home/uib/georeferenced/test/test.csv", index = False)
+
+    # i = 0
+
+    # while i <= len(df.columns):
+        
+    #     x_out, y_out = changeEPSG(EPSG_in, EPSG_out, df_aux.iloc[i, 1], df_aux.iloc[i, 0],)
+
+
+
+    # for i in range(len(d))
+
+
+
+
+    # df_aux = df.iloc[:, 1:3]
+
+    # print(df_aux.iloc[0, 0])
+
+
+  
+
+    # for i in range(len(df_aux)):
+    #     #lon   #lat                                  #lon               #lat
+    #     x_out, y_out = changeEPSG(EPSG_in, EPSG_out, df_aux.iloc[i, 1], df_aux.iloc[i, 0],)
+
+    #     add_values = {'lon':x_out, 'lat':y_out}
+    #     add_row = pd.Series(add_values)
+    #     df_epsg3857 = df_epsg3857.append(add_row, ignore_index = True)
+
+    #     if i % 100 == 0:
+    #         print(i)
+
+    # df_epsg3857.to_csv("/home/uib/georeferenced/DecimationX4_StoreDistance0_55/test.csv", index = False)
 
 
     # corners_list = []
