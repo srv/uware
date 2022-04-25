@@ -403,7 +403,6 @@ namespace uware
       hmiddleup << "," << endl;
 
     }
-
     f_latlon_file.close();
   }
 
@@ -414,18 +413,16 @@ namespace uware
 
     if (init == true) {
 
-      f_navsts << "#img_name" << "," << "stamp" << "latitude" "," << "longitude" << "," << "altitude" << "," << "\n" ;
-
+      f_navsts << "#img_name" << "," << "stamp" << "," << "latitude" "," << "longitude" << "," << "altitude" << "," << "\n" ;
+      
     } else {
 
       f_navsts << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << "," <<
       stamp << "," << lat << "," << lon << "," << h << "," << "\n" ;
-      
 
     }
 
     f_navsts.close() ;
-
   }
 
 
