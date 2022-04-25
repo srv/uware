@@ -23,7 +23,7 @@ namespace uware
 
   static const string NAVSTS_FILE = "navsts.csv";
 
-  static const string LATLON_FILE = "latlonimages.csv" ; 
+  static const string LATLONCORNERS_FILE = "latloncorners.csv" ; 
 
   static const string F2F_POSES = "frame2frame_poses.txt";
   static const string F2F_EDGES = "frame2frame_edges.txt";

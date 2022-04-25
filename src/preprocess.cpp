@@ -104,7 +104,15 @@ namespace uware
       // Check max_altitude
       ROS_INFO_STREAM("Max altitude (NODE): " << params_.max_altitude) ;
 
-      storeLatLonImages("", 0, 0, 0, 0, initialization_) ;
+      storeNavSts(NAVSTS_FILE, 0, 0, 0, 0, 0, initialization_) ;
+      storeLatLonCorners(LATLONCORNERS_FILE, 0, 0, 
+                        0, 0, 0, 
+                        0, 0, 0, 
+                        0, 0, 0,
+                        0, 0, 0,
+                        0, 0, 0,
+                        0, 0, 0,
+                        initialization_);
 
       // System initialized
       initialization_ = false;
@@ -165,6 +173,7 @@ namespace uware
     tf::Transform upleftCorner_tf = data2Tf(-W, H, roll1, pitch1, -yaw1);
     tf::Transform downrightCorner_tf = data2Tf(W, -H, roll1, pitch1, (M_PI-yaw1));
     tf::Transform downleftCorner_tf = data2Tf(-W, -H, roll1, pitch1, (M_PI+yaw1));
+    tf::Transform upmiddle_tf = data2Tf(0, H, roll1, pitch1, 0) ;
 
     /// transform the odometry tmp message, which contains the NED Turbot base Link pose to the left optical frame. The result is the NED pose of the left optical with respect to the NED origin. 
 
@@ -177,6 +186,7 @@ namespace uware
     tf::Transform upleftMap_tf = cameraMap_tf * upleftCorner_tf;
     tf::Transform downrightMap_tf = cameraMap_tf * downrightCorner_tf; 
     tf::Transform downleftMap_tf = cameraMap_tf * downleftCorner_tf;
+    tf::Transform upmiddleMap_tf = cameraMap_tf * upmiddle_tf ;
 
     // Center and corners Lat Lons
     LatLonAltitude uprightLatLon = ned_tf2Geo(uprightMap_tf) ;
@@ -184,6 +194,7 @@ namespace uware
     LatLonAltitude downrightLatlon = ned_tf2Geo(downrightMap_tf) ;
     LatLonAltitude downleftLatlon = ned_tf2Geo(downleftMap_tf) ;
     LatLonAltitude centerLatlon = ned_tf2Geo(cameraMap_tf) ;
+    LatLonAltitude upMiddleLatlon = ned_tf2Geo(upmiddleMap_tf) ;
 
     ROS_INFO_STREAM("[PreProcess]: Geodesic data corresponding to the NED pose of the left optical. Lat: " << centerLatlon.lat <<" Lon: " <<  centerLatlon.lon << " Altitude: " << centerLatlon.h);
 
@@ -216,13 +227,18 @@ namespace uware
         // Store odometries and the Geodesic Data of view center and 4 corners. 
         // storeOdometry(ODOM_FILE, id_, stamp, odom);
         storeOdometry(OMAP_FILE,  id_, stamp, cameraMap_tf);
-        storeNavSts(NAVSTS_FILE, id_, stamp, 
-                    centerLatlon.lat, centerLatlon.lon, centerLatlon.h, 
-                    uprightLatLon.lat, uprightLatLon.lon, uprightLatLon.h, 
-                    upleftLatlon.lat, upleftLatlon.lon, upleftLatlon.h,
-                    downrightLatlon.lat, downrightLatlon.lon, downrightLatlon.h,
-                    downleftLatlon.lat, downleftLatlon.lon, downleftLatlon.h);
-        storeLatLonImages(LATLON_FILE, id_, centerLatlon.lat, centerLatlon.lon, altitud, initialization_) ;
+
+        storeNavSts(NAVSTS_FILE, id_, stamp, centerLatlon.lat, centerLatlon.lon, altitud, initialization_) ;
+
+        storeLatLonCorners(LATLONCORNERS_FILE, id_, stamp, 
+                          centerLatlon.lat, centerLatlon.lon, centerLatlon.h, 
+                          uprightLatLon.lat, uprightLatLon.lon, uprightLatLon.h, 
+                          upleftLatlon.lat, upleftLatlon.lon, upleftLatlon.h,
+                          downrightLatlon.lat, downrightLatlon.lon, downrightLatlon.h,
+                          downleftLatlon.lat, downleftLatlon.lon, downleftLatlon.h,
+                          upMiddleLatlon.lat, upMiddleLatlon.lon, upMiddleLatlon.h,
+                          initialization_);
+        
 
         // --------------------------------
         // tf::Matrix3x3 obase = odom.getBasis();
@@ -290,12 +306,12 @@ namespace uware
     string odom_file = params_.outdir + "/" + ODOM_FILE;
     string map_file  = params_.outdir + "/" + OMAP_FILE;
     string navsts_file  = params_.outdir + "/" + NAVSTS_FILE;
-    string latlonimage_file  = params_.outdir + "/" + LATLON_FILE;
+    string latloncorner_file  = params_.outdir + "/" + LATLONCORNERS_FILE;
     remove(cm_file.c_str());
     remove(odom_file.c_str());
     remove(map_file.c_str());
     remove(navsts_file.c_str());
-    remove(latlonimage_file.c_str());
+    remove(latloncorner_file.c_str());
 
     return true;
   }
@@ -333,52 +349,77 @@ namespace uware
   }
 
 
-  void PreProcess::storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, float latiupright, float lonupright, float hupright, float latupleft, float lonupleft, float hupleft, float latdownright, float londownright, float hdownright, float latdownleft, float londownleft, float hdownleft)
+  void PreProcess::storeLatLonCorners(string filename, int id, double stamp, 
+                                      float lat, float lon, float h, 
+                                      float latiupright, float lonupright, float hupright, 
+                                      float latupleft, float lonupleft, float hupleft, 
+                                      float latdownright, float londownright, float hdownright, 
+                                      float latdownleft, float londownleft, float hdownleft, 
+                                      float latmiddleup, float lonmiddleup, float hmiddleup,
+                                      bool init)
   {
     string navstatus_file = params_.outdir + "/" + filename;
     fstream f_navsts(navstatus_file.c_str(), ios::out | ios::app);
 
-    f_navsts << fixed <<
-    setprecision(15) <<
-    Utils::id2str(id) << "," <<
-    stamp << "," <<
+    if (init == true){
 
-    lat << "," <<
-    lon << "," << 
-    h << "," << 
+      f_navsts << "#id" << "," << "stamp" << ","
+      << "latitude" << "," << "longitude" << "," << "altitude" << ","
+      << "uprightlat" << "," << "uprightlon" << "," << "uprighth" << ","
+      << "upleftlat" << "," << "upleftlon" << "," << "uplefth" << ","
+      << "downrightlat" << "," << "downrightlon" << "," << "downrighth" << ","
+      << "downleftlat" << "," << "downleftlon" << "," << "downlefth" << ","
+      << "middleuplat" << "," << "middleuplon" << "," << "middleuph" << "\n" ;
 
-    latiupright << "," <<
-    lonupright << "," << 
-    hupright << "," << 
+    } else {
 
-    latupleft << "," <<
-    lonupleft << "," << 
-    hupleft << "," << 
+      f_navsts << fixed <<
+      setprecision(15) <<
+      Utils::id2str(id) << "," <<
+      stamp << "," <<
 
-    latdownright << "," <<
-    londownright << "," << 
-    hdownright << "," <<
+      lat << "," <<
+      lon << "," << 
+      h << "," << 
 
-    latdownleft << "," <<
-    londownleft << "," << 
-    hdownleft << "," << endl;
+      latiupright << "," <<
+      lonupright << "," << 
+      hupright << "," << 
+
+      latupleft << "," <<
+      lonupleft << "," << 
+      hupleft << "," << 
+
+      latdownright << "," <<
+      londownright << "," << 
+      hdownright << "," <<
+
+      latdownleft << "," <<
+      londownleft << "," << 
+      hdownleft << "," << 
+      
+      latmiddleup << "," <<
+      lonmiddleup << "," <<
+      hmiddleup << "," << endl;
+
+    }
 
     f_navsts.close();
   }
 
-  void PreProcess::storeLatLonImages(string filename, int id, float lat, float lon, float h, bool init)
+  void PreProcess::storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, bool init)
   {
     string latlon_file = params_.outdir + "/" + filename;
     fstream f_latlon_file(latlon_file.c_str(), ios::out | ios::app);
 
     if (init == true) {
 
-      f_latlon_file << "#img_name" << ";" << "latitude" ";" << "longitude" << ";" << "altitude" << ";" << "\n" ;
+      f_latlon_file << "#img_name" << "," << "stamp" << "latitude" "," << "longitude" << "," << "altitude" << "," << "\n" ;
 
     } else {
 
-      f_latlon_file << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << ";" <<
-      lat << ";" << lon << ";" << h << ";" << "\n" ;
+      f_latlon_file << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << "," <<
+      stamp << "," << lat << "," << lon << "," << h << "," << "\n" ;
       
 
     }
