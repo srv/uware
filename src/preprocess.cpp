@@ -165,7 +165,8 @@ namespace uware
 
     /*image corners*/  
     double W = (x_dim_img/2), H = (y_dim_img/2); /// get the horizontal and vertical metric view dimensions
-    double angle = atan(W/H); /// get the orientation of the upper right corner of the view with respect to its center. 
+    // double angle = atan(W/H); /// get the orientation of the upper right corner of the view with respect to its center. 
+    double angle = atan(H/W);
     
     double roll1 = 0, pitch1 = 0, yaw1 = angle; 
     //transform (tf format) between view (image to space) center to the 4 corners. 
@@ -413,12 +414,12 @@ namespace uware
 
     if (init == true) {
 
-      f_navsts << "#img_name" << "," << "stamp" << "," << "latitude" "," << "longitude" << "," << "altitude" << "," << "\n" ;
+      f_navsts << "#img_name" << "," << "latitude" << "," << "longitude" << "," << "altitude" << "," << "stamp" << "\n" ;
       
     } else {
 
       f_navsts << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << "," <<
-      stamp << "," << lat << "," << lon << "," << h << "," << "\n" ;
+      lat << "," << lon << "," << h << "," << stamp << "," << "\n" ;
 
     }
 
