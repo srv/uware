@@ -28,24 +28,27 @@ class image_georeferencer:
         print("Getting parameters")
         self.max_altitude = rospy.get_param('~max_altitude', default = 5.5)
         self.overlap_threshold = rospy.get_param('~overlap_thrshld', default = 0.5)
-        directory = rospy.get_param('~saving_dir', default = '/home/turbot/bagfiles')
+        self.directory = rospy.get_param('~saving_dir', default = '/home/turbot/bagfiles')
         self.nskips = rospy.get_param('~nskips', default = 3)    #it just picks one image in every 3
+        self.sensor_frame_id = rospy.get_param('~sensor_frame_id', default = "turbot/stereo_down/left_optical")
+        self.world_frame_id = rospy.get_param('~world_frame_id', default = "world_ned")
         # FOV de la camera extret de excel de framerate i exposicio -> modificar
         # FOV-x water 34,73   deg         # FOV_x_water=34.73
         # FOV-y water 26,84   deg         # FOV_y_water=26.84
         FOV_x_water = rospy.get_param('~FOV_x_water', default = 34.73)
         FOV_y_water = rospy.get_param('~FOV_y_water', default = 26.84)
 
-        if not "/" in directory[-1]:
-            directory += "/"
+        if not "/" in self.directory[-1]:
+            self.directory += "/"
 
-        self.dir_save_bagfiles = directory + 'csv_turbot_bl/'
-        if not os.path.exists(self.dir_save_bagfiles):
-            os.makedirs(self.dir_save_bagfiles)
+        if not os.path.exists(self.directory):
+            os.makedirs(self.directory)
 
         print("Node started with FOV_X_water, FOV_Y_water: ", FOV_x_water, FOV_y_water)
         print("Max altitude: ", self.max_altitude)
-        print("Saving dir: ", self.dir_save_bagfiles)
+        print("Saving dir: ", self.directory)
+        print("Sensor frame id: ", self.sensor_frame_id)
+        print("World frame id: ", self.world_frame_id)
 
         self.rows = 0
         self.counter = 0
@@ -55,11 +58,11 @@ class image_georeferencer:
         self.listener = tf.TransformListener()
 
         #Subscribers
-        nav_sub = message_filters.Subscriber("/turbot/navigator/navigation", NavSts, queue_size=1)
+        nav_sub = message_filters.Subscriber("navigation", NavSts, queue_size=1)
 
         img_sub = message_filters.Subscriber("image_rect_color", Image, queue_size=1)
 
-        ts = message_filters.ApproximateTimeSynchronizer([nav_sub, img_sub], 50, 0.5, allow_headerless=True)
+        ts = message_filters.ApproximateTimeSynchronizer([nav_sub, img_sub], 250, 0.5, allow_headerless=True)
         ts.registerCallback(self.nav_image_update)
 
 
@@ -75,17 +78,19 @@ class image_georeferencer:
             self.ned_origin_lon = nav_sub.origin.longitude
             self.ned = NED(self.ned_origin_lat, self.ned_origin_lon, 0.0)
             time.sleep(0.1)
-            if self.listener.canTransform("world_ned", "turbot/stereo_down/left_optical", rospy.Time(0)):
+            if self.listener.canTransform(self.world_frame_id, self.sensor_frame_id, rospy.Time(0)):
                 self.use_transform = True
+                print("Use transform: ", self.use_transform)
             else:
                 self.use_transform = False
+                print("Use transform: ", self.use_transform)
 
         if (self.counter % self.nskips) == 0:
 
             print("NAV_IMAGE_UPDATE")
 
             if self.use_transform is True:
-                pose_center_transformed, quaternion = self.listener.lookupTransform("/world_ned", "/turbot/stereo_down/left_optical", rospy.Time(0))
+                pose_center_transformed, quaternion = self.listener.lookupTransform(self.world_frame_id, self.sensor_frame_id, rospy.Time(0))
                 print("x_img_pos_trans: ", pose_center_transformed[0])
                 print("y_img_pos_trans: ", pose_center_transformed[1])
                 pose_center_lat, pose_center_lon, _ = self.ned.ned2geodetic([pose_center_transformed[0], pose_center_transformed[1], 0.0])
@@ -104,9 +109,9 @@ class image_georeferencer:
             if altitude <= self.max_altitude: #filter emerging and submerging imgs
                 self.export_to_csv(self.counter, pose_center_lat, pose_center_lon, altitude)
                 bridge = CvBridge()
-                cv_image = bridge.imgmsg_to_cv2(img_sub, desired_encoding="bgr8") #
+                cv_image = bridge.imgmsg_to_cv2(img_sub, desired_encoding = "bgr8")
                 filename_suffix = 'JPG'
-                filename = os.path.join(self.dir_save_bagfiles+str(self.counter) + "." + filename_suffix)
+                filename = os.path.join(self.directory + str(self.counter) + "." + filename_suffix)
                 cv2.imwrite(filename,cv_image)
                 print("img saved as ", filename)
         
@@ -115,7 +120,7 @@ class image_georeferencer:
 
     def export_to_csv(self, seq, lat, lon, z):
         header = ["#img_name", "latitude", "longitude", "altitude"]
-        csv_file = os.path.join(self.dir_save_bagfiles + 'img_info_test0.csv')
+        csv_file = os.path.join(self.directory + 'img_info.csv')
         print(csv_file)
         seq = str(seq) + ".JPG"
         data_list = [seq, lat, lon, z]
