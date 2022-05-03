@@ -334,7 +334,7 @@ namespace uware
     fstream f_odom(odom_file.c_str(), ios::out | ios::app);
 
     f_odom << fixed <<
-    setprecision(6) <<
+    setprecision(10) <<
     Utils::id2str(id) << "," <<
     stamp << "," <<
 
@@ -375,7 +375,7 @@ namespace uware
     } else {
 
       f_latlon_file << fixed <<
-      setprecision(15) <<
+      setprecision(20) <<
       Utils::id2str(id) << "," <<
       stamp << "," <<
 
@@ -418,7 +418,7 @@ namespace uware
       
     } else {
 
-      f_navsts << fixed << setprecision(15) << Utils::id2str(id) + ".jpg" << "," <<
+      f_navsts << fixed << setprecision(20) << Utils::id2str(id) + ".jpg" << "," <<
       lat << "," << lon << "," << h << "," << stamp << "," << "\n" ;
 
     }

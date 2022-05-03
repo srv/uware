@@ -1,33 +1,35 @@
 <launch>
 
   <arg name="camera" default="/stereo_down"/>
-  <arg name="dec" default="4"/>
+  <arg name="dec" default="2"/>
   
+  <arg name="bagfile" default="/DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-12-51-02_0.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-12-57-21_1.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-03-41_2.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-10-12_3.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-16-32_4.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-22-51_5.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-29-11_6.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-35-30_7.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-41-50_8.bag
+                              /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/topics_2022-01-31-12-51-47_0.bag" />
 
   <!-- <arg name="bagfile" default="/DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-10-01_0.bag
-                              /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-16-06_1.bag
-                              /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-22-01_2.bag
-                              /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-28-04_3.bag
-                              /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-34-25_4.bag
-                              /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-40-44_5.bag
-                              /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/topics_2022-03-09-13-10-18_0.bag" /> -->
-
-  <arg name="bagfile" default="/home/uib/bagfiles/bendinat/2022_03_09/13_10_00/images_2022-03-09-13-10-01_0.bag
-                              /home/uib/bagfiles/bendinat/2022_03_09/13_10_00/images_2022-03-09-13-16-06_1.bag
-                              /home/uib/bagfiles/bendinat/2022_03_09/13_10_00/images_2022-03-09-13-22-01_2.bag
-                              /home/uib/bagfiles/bendinat/2022_03_09/13_10_00/images_2022-03-09-13-28-04_3.bag
-                              /home/uib/bagfiles/bendinat/2022_03_09/13_10_00/images_2022-03-09-13-34-25_4.bag
-                              /home/uib/bagfiles/bendinat/2022_03_09/13_10_00/images_2022-03-09-13-40-44_5.bag
-                              /home/uib/bagfiles/bendinat/2022_03_09/13_10_00/topics_2022-03-09-13-10-18_0.bag"/>
+                                /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-16-06_1.bag
+                                /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-22-01_2.bag
+                                /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-28-04_3.bag
+                                /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-34-25_4.bag
+                                /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-40-44_5.bag
+                                /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/topics_2022-03-09-13-10-18_0.bag"/> -->
 
   <param name="/use_sim_time" value="true"/>
 
   <node pkg="rosbag" type="play" name="rosbag" args="--clock $(arg bagfile) -r 1" />
 
-  <node pkg="odometry2range" type="odometry2range" name="odometry2range" output="screen">
+  <!-- <node pkg="odometry2range" type="odometry2range" name="odometry2range" output="screen">
     <remap from="odometry" to="/turbot/navigator/altitude/ekf_alt/odometry"/>
     <remap from="Range" to="/turbot/navigator/altitude_EKF_filtered"/>
-  </node>
+  </node> -->
 
   <include file="$(find uware)/launch/stereo_3D.launch">
     <arg name="stereo" value="$(arg camera)" />
@@ -51,15 +53,15 @@
     <param name="camera_right_topic" value="$(arg camera)/scaled_x$(arg dec)/right/image_rect_color"/>
     <param name="camera_right_info" value="$(arg camera)/scaled_x$(arg dec)/right/camera_info"/>
     <param name="camera_left_info" value="$(arg camera)/scaled_x$(arg dec)/left/camera_info"/>
-    <param name="camera_topic_points2" value="$(arg camera)/scaled_x$(arg dec)/points2"/>
-    <param name="altitude_topic" value="/turbot/navigator/altitude_EKF_filtered"/>
+    <param name="camera_topic_points2" value="$(arg camera)/scaled_x$(arg dec)/points2"/> 
+    <!-- <param name="altitude_topic" value="/turbot/navigator/altitude_EKF_filtered"/> -->
+    <param name="altitude_topic" value="/turbot/navigator/altitude"/>
     <param name="navstatus_topic" value="/turbot/navigator/navigation"/>
     <param name="min_cloud_size" value="400"/>
-    <param name="store_distance" value="0.55"/>
-    <!-- <param name="outdir" value="/DATA_C/test_mosaic_2/images_and_homographies"/> -->
-    <!-- <param name="outdir" value="/DATA_C/test_mosaic/images_and_homographies_5"/> -->
-    <param name="outdir" value="/home/uib/mosaics/images_and_homographies_test"/>
-    <param name="max_altitude" value="4.0"/>
+    <param name="store_distance" value="0.12"/>
+    <param name="outdir" value="/DATA_C/georeferenced/INVHALI/2022_01_31/12_51_01/ROS/HM/decimationX2_storedistance_012/"/>
+    <param name="max_altitude" value="1.7"/>
+    <param name="approximate_time" value="250"/> <!-- CHANGE TO 20 SOON AS POSSIBLE -->
   </node>
 
 
