@@ -23,13 +23,10 @@ int main(int argc, char **argv)
 
   // Read parameters
   PreProcess::Params params;
-  string odom_topic, map_topic, altitude_topic, camera_left_topic, camera_right_topic, camera_left_info, camera_right_info, camera_topic_points2, outdir, navstatus_topic;
+  string camera_left_topic, camera_right_topic, camera_left_info, camera_right_info, camera_topic_points2, outdir, navstatus_topic;
   int approxTime ;
-  // nhp.param("odom_topic",           odom_topic,                 string(""));
-  // nhp.param("map_topic",            map_topic,                  string(""));
   nhp.param("camera_left_topic",    camera_left_topic,          string(""));
   nhp.param("camera_right_topic",   camera_right_topic,         string(""));
-  nhp.param("altitude_topic",       altitude_topic,             string(""));
   nhp.param("camera_left_info",     camera_left_info,           string(""));
   nhp.param("camera_right_info",    camera_right_info,          string(""));
   nhp.param("camera_topic_points2", camera_topic_points2,       string(""));
@@ -43,7 +40,6 @@ int main(int argc, char **argv)
   nhp.param("max_altitude",         params.max_altitude,        4.5);
   nhp.param("approximate_time",     approxTime,                 20);
 
-
   // Init the node
   PreProcess node;
   node.setParams(params);
@@ -52,53 +48,37 @@ int main(int argc, char **argv)
   image_transport::ImageTransport it(nh);
   image_transport::SubscriberFilter left_sub, right_sub;
   message_filters::Subscriber<sensor_msgs::CameraInfo> left_info_sub, right_info_sub;
-  message_filters::Subscriber<sensor_msgs::Range> altitude_sub;
-  // message_filters::Subscriber<nav_msgs::Odometry> odom_sub;
-  // message_filters::Subscriber<nav_msgs::Odometry> map_sub;
   message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub;
   message_filters::Subscriber<cola2_msgs::NavSts> navstatus_sub;
 
 
 ////sensor_msgs::PointCloud2.
   /// syncro odometries, images, info-images, altitude and the nav status
-  typedef message_filters::sync_policies::ApproximateTime<
-                                                          // nav_msgs::Odometry,
-                                                          // nav_msgs::Odometry,
-                                                          sensor_msgs::Image,
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
                                                           sensor_msgs::Image,
                                                           sensor_msgs::CameraInfo,
                                                           sensor_msgs::CameraInfo,
-                                                          sensor_msgs::Range,
                                                           cola2_msgs::NavSts> SyncPolicy;
   typedef message_filters::Synchronizer<SyncPolicy> Sync;
 
   // Setup the sync
   boost::shared_ptr<Sync> sync;
-  // odom_sub      .subscribe(nh, odom_topic, 20);
-  // map_sub       .subscribe(nh, map_topic, 20);
   left_sub      .subscribe(it, camera_left_topic, 5);
   right_sub     .subscribe(it, camera_right_topic, 5);
   left_info_sub .subscribe(nh, camera_left_info,  5);
   right_info_sub.subscribe(nh, camera_right_info, 5);
-  altitude_sub  .subscribe(nh, altitude_topic, 5);
   cloud_sub     .subscribe(nh, camera_topic_points2, 5);
   navstatus_sub .subscribe(nh, navstatus_topic, 20);
 
   // Sync callback for all syncronized topics 
-  // sync.reset(new Sync(SyncPolicy(20), odom_sub, map_sub, left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
-  sync.reset(new Sync(SyncPolicy(approxTime), left_sub, right_sub, left_info_sub, right_info_sub, altitude_sub, navstatus_sub) );
-  //sync.reset(new Sync(SyncPolicy(10), odom_sub, map_sub, left_sub, right_sub, left_info_sub, altitude_sub, right_info_sub, cloud_sub) );
+  sync.reset(new Sync(SyncPolicy(approxTime), left_sub, right_sub, left_info_sub, right_info_sub, navstatus_sub) );
+  
+  sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5));
 
-  // sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6, _7, _8));
-  sync->registerCallback(bind(&PreProcess::callback, &node, _1, _2, _3, _4, _5, _6));
-
-  // ROS_INFO_STREAM("odom_topic: " << odom_topic);
-  // ROS_INFO_STREAM("map_topic: " << map_topic);
   ROS_INFO_STREAM("camera_left_topic: " << camera_left_topic);
   ROS_INFO_STREAM("camera_right_topic: " << camera_right_topic);
   ROS_INFO_STREAM("camera_left_info: " << camera_left_info);
   ROS_INFO_STREAM("camera_right_info: " << camera_right_info);
-  ROS_INFO_STREAM("altitude_topic: " << altitude_topic);
   ROS_INFO_STREAM("navstatus_topic: " << navstatus_topic);
   ROS_INFO_STREAM("Output dir: " << params.outdir);
   ROS_INFO_STREAM("Max altitude: " << params.max_altitude) ;

@@ -1,8 +1,9 @@
 georeferencer:
-    saving_dir: '/DATA_C/georeferenced/INVHALI/2020_09_17/12_29_34_test/'
-    # saving_dir: '/DATA_C/georeferenced/TEST/'
-    max_altitude: 5.5
+    saving_dir: '/DATA_C/georeferenced/INVHALI/test/'
+    max_altitude: 50
     FOV_x_water: 34.73
     FOV_y_water: 26.84
     overlap_thrshld: 0.99
     nskips: 3
+    sensor_frame_id: 'xiroi/stereo_down/left_optical'
+    world_frame_id: 'world_ned'
