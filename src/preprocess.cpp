@@ -18,26 +18,20 @@ namespace uware
     ROS_INFO("[PreProcess]: init Preprocess node.");
   }
 
-  //const sensor_msgs::PointCloud2ConstPtr& cloud_msg
   void PreProcess::callback(
-      // const nav_msgs::Odometry::ConstPtr& odom_msg,
-      // const nav_msgs::Odometry::ConstPtr& map_msg,
       const sensor_msgs::ImageConstPtr& l_img_msg,
       const sensor_msgs::ImageConstPtr& r_img_msg,
       const sensor_msgs::CameraInfoConstPtr& l_info_msg,
       const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-      const sensor_msgs::RangeConstPtr& altitude_msg,
       const cola2_msgs::NavSts::ConstPtr& navstatus_msg)
   {
-    double altitud = altitude_msg->range;
-    // float latitud = navstatus_msg->global_position.latitude; //// lat/long of Turbot base link
-    // float longitud = navstatus_msg->global_position.longitude;
     float north = navstatus_msg->position.north; //// NED pose of Turbot base link, in translation and rotation, with respect to NED origin.
     float east = navstatus_msg->position.east; 
     float depth = navstatus_msg->position.depth;
     float roll = navstatus_msg->orientation.roll;
     float pitch = navstatus_msg->orientation.pitch;
     float yaw = navstatus_msg->orientation.yaw;
+    float altitud = navstatus_msg->altitude;
     std_msgs::Header headerNav = navstatus_msg->header;
     float originlat = navstatus_msg->origin.latitude; //// NED lat/lon origin of trajectory 
     float originlong = navstatus_msg->origin.longitude;

@@ -4,8 +4,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
-#include <sensor_msgs/Range.h>
-//#include <geometry_msgs/Quaternion>
 #include <cola2_msgs/NavSts.h>
 #include <cola2_msgs/NED.h>
 #include <cola2_msgs/RPY.h>
@@ -32,8 +30,6 @@
 #include <pcl/filters/crop_box.h>
 
 #include <opencv2/opencv.hpp>
-//#include <opencv2/features2d/features2d.hpp>
-//#include <opencv2/nonfree/features2d.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -112,24 +108,18 @@ public:
 
   /** \brief Messages callback. This function is called when synchronized odometry and image
    * message are received.
-   * \param odom_msg ros odometry message of type nav_msgs::Odometry
    * \param l_img left stereo image message of type sensor_msgs::Image
    * \param r_img right stereo image message of type sensor_msgs::Image
    * \param l_info left stereo info message of type sensor_msgs::CameraInfo
    * \param r_info right stereo info message of type sensor_msgs::CameraInfo
    * \param pointcloud
-   */// const sensor_msgs::PointCloud2ConstPtr& cloud_msg
-  void callback(
-                // const nav_msgs::Odometry::ConstPtr& odom_msg,
-                // const nav_msgs::Odometry::ConstPtr& map_msg,
-                const sensor_msgs::ImageConstPtr& l_img_msg,
+   */
+  void callback(const sensor_msgs::ImageConstPtr& l_img_msg,
                 const sensor_msgs::ImageConstPtr& r_img_msg,
                 const sensor_msgs::CameraInfoConstPtr& l_info_msg,
                 const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-                const sensor_msgs::RangeConstPtr& altitude_msg,
                 const cola2_msgs::NavSts::ConstPtr& navstatus_msg);
-
-
+                
 protected:
 
   /** \brief Create operational directories
