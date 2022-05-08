@@ -72,7 +72,8 @@ public:
     // Default settings
     Params () {
       outdir              = "";
-      base_link_frame_id  = "/turbot/base_link" ;
+      // base_link_frame_id  = "/turbot/base_link" ;
+      base_link_frame_id  = "" ;
       min_cloud_size      = 100;
       store_distance      = 0.5;
       use_2d_distance     = false;
@@ -119,7 +120,11 @@ public:
                 const sensor_msgs::CameraInfoConstPtr& l_info_msg,
                 const sensor_msgs::CameraInfoConstPtr& r_info_msg,
                 const cola2_msgs::NavSts::ConstPtr& navstatus_msg);
-                
+
+  void mono_callback(const sensor_msgs::ImageConstPtr& img_msg,
+                    const sensor_msgs::CameraInfoConstPtr& info_msg,
+                    const cola2_msgs::NavSts::ConstPtr& navstatus_msg);
+
 protected:
 
   /** \brief Create operational directories
@@ -163,6 +168,11 @@ protected:
    */
   int storeImages(cv::Mat l_img, cv::Mat r_img, double stamp);
 
+  /** \brief Store image data into file
+   * \param image
+   */
+  void mono_storeImages(cv::Mat img);
+
   /** \brief Convert ros image to cv image
    * @return true if conversion was successfully
    * \param left input image
@@ -173,6 +183,14 @@ protected:
   bool imgMsgToMat(sensor_msgs::Image l_img_msg,
                    sensor_msgs::Image r_img_msg,
                    cv::Mat &l_img, cv::Mat &r_img);
+
+  /** \brief Convert ros image to cv image
+   * @return true if conversion was successfully
+   * \param ROS input image 
+   * \param CV output image 
+   */
+  bool mono_imgMsgToMat(sensor_msgs::Image img_msg,
+                        cv::Mat &img);
 
  /** \brief Convert the odometry message to TF
    * @return the transform

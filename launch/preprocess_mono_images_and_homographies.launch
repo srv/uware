@@ -1,0 +1,69 @@
+<launch>
+
+    <!-- <arg name="camera" default="/stereo_down"/>  -->
+    <arg name = "camera" default = "/xiroi/stereo_ch3"/>
+    <arg name = "robot" default = "/xiroi" />
+    <arg name = "dec" default = "4"/>
+    
+    <!-- <arg name="bagfile" default="/DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-12-51-02_0.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-12-57-21_1.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-03-41_2.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-10-12_3.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-16-32_4.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-22-51_5.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-29-11_6.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-35-30_7.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/images_2022-01-31-13-41-50_8.bag
+                                /DATA_C/bagfiles/InvHali/2022_01_31/12_51_01/topics_2022-01-31-12-51-47_0.bag" /> -->
+
+    <!-- <arg name="bagfile" default="/DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-10-01_0.bag
+                                    /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-16-06_1.bag
+                                    /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-22-01_2.bag
+                                    /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-28-04_3.bag
+                                    /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-34-25_4.bag
+                                    /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/images_2022-03-09-13-40-44_5.bag
+                                    /DATA_B/bagfiles/turbot/2022_03_09/13_10_00/topics_2022-03-09-13-10-18_0.bag"/> -->
+
+    <arg name = "bagfile" default = "/DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-13-34_0.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-19-08_1.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-24-42_2.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-30-15_3.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-35-48_4.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-41-34_5.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-47-07_6.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_images_2022-01-31-17-52-41_7.bag
+                                        /DATA_C/bagfiles/InvHali/2022_01_31/xiroi_17_13_34/xiroi_topics_2022-01-31-17-13-34_0.bag" />
+
+    <param name = "/use_sim_time" value = "true"/>
+
+    <node pkg = "rosbag" type = "play" name = "rosbag" args = "--clock $(arg bagfile) -r 1" />
+
+    <include file = "$(find uware)/launch/stereo_3D.launch">
+        <arg name = "stereo" value = "$(arg camera)" />
+        <arg name = "decimation" value = "$(arg dec)" />
+    </include>
+
+    <!-- <node pkg = "image_preprocessing" type = "color_correction_image" name = "color_correction_image_left" output = "screen">
+        <remap from = "/color_correction_image/input" to = "$(arg camera)/scaled_x$(arg dec)/left/image_rect_color"/>
+        <remap from = "/color_correction_image/output" to = "/clahe/scaled_x$(arg dec)/left/image_rect_color_corrected"/>
+    </node> -->
+
+    <!-- Publish Static Transforms -->
+    <node pkg="tf" type="static_transform_publisher" name="xiroi_to_stereo_stick" args="0.32 0 1.25 0.0 0.0 0.0 /xiroi/base_link /xiroi/stereo_ch3_stick 100" />
+    <node pkg="tf" type="static_transform_publisher" name="stick_to_stereo" args="0.0 0.0 0.0 1.57 0.0 0.0 /xiroi/stereo_ch3_stick xiroi/stereo_ch3 100" />
+    <node pkg="tf" type="static_transform_publisher" name="stereo_to_right_optical" args="0.052 0.0 0.0 0.0 0.0 0.0 /xiroi/stereo_ch3 xiroi/stereo_ch3/right_optical 100" />
+
+    <node pkg = "uware" type = "preprocess_mono" name = "preprocess_mono" output = "screen">
+        <!-- <param name = "img_topic" value = "/clahe/scaled_x$(arg dec)/left/image_rect_color_corrected"/> -->
+        <!-- <param name = "img_topic" value = "$(arg camera)/scaled_x$(arg dec)/left/image_rect_color"/> -->
+        <param name = "img_topic" value = "$(arg camera)/scaled_x$(arg dec)/right/image_rect_color" />
+        <param name = "info_topic" value = "$(arg camera)/scaled_x$(arg dec)/right/camera_info"/>
+        <param name = "navstatus_topic" value = "$(arg robot)/navigator/navigation"/> 
+        <param name = "approximate_time" value = "20"/> 
+        <param name = "outdir" value = "/DATA_C/georeferenced/INVHALI/2022_01_31/xiroi_17_13_34/HM/DecimationX4_StoreDistance0_15/"/>
+        <param name = "base_link_frame_id" value = "/xiroi/base_link" />
+        <param name = "store_distance" value = "0.15"/>
+        <param name = "max_altitude" value = "10"/>
+    </node>
+
+</launch>
