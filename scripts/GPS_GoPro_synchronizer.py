@@ -4,10 +4,10 @@ import os
 import argparse
 import pyexiv2
 import pandas as pd
+from PIL import Image
 
 
 class Synchronizer:
-
 
     def __init__(self, inI, inGPS, outCSV):
 
@@ -85,9 +85,38 @@ class Synchronizer:
         if self.exist:
             self.outputDataFrame.to_csv(path_or_buf = self.outputCSV, sep = ",", index = False)
         else:
-            self.outputDataFrame.to_csv(path_or_buf = self.outputCSV + "image_latlon_2.csv", sep = ",", index = False)
+            self.outputDataFrame.to_csv(path_or_buf = self.outputCSV + "image_latlon.csv", sep = ",", index = False)
 
         print("---------------------------------------------------------------------------")
+
+
+# Auxiliar function that transform strings to booleans.
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 'True', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'False', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+# Auxiliar function to donwsample images.
+def decimateImages(imagePath, folderPath, decimation):
+
+    decimatePath = folderPath + "/" + "decimateX2"
+
+    if not os.path.exists(decimatePath):
+        os.makedirs(decimatePath)
+
+    auxImageName = imagePath.split("/")
+    auxImageName = auxImageName[-1]
+
+    image = Image.open(imagePath)
+    width, height = image.size
+    new_image = image.resize((int(width / decimation), int(height / decimation)))
+    new_image.save(decimatePath + "/" + auxImageName)
 
 
 if __name__ == '__main__':
@@ -97,6 +126,7 @@ if __name__ == '__main__':
     parser.add_argument("--inImage", help = "Path to .jpg or path to the directory with .jpg")
     parser.add_argument("--inGPS", help = "Path to GPS.csv")
     parser.add_argument("--outCSV", default = os.getcwd(), help = "Path to save .csv file with images and lat-lng")
+    parser.add_argument("--enableDecimateX2", type = str2bool, nargs = '?', const = True, default = False, help = "Enable Decimate X2? (True/False)")
     args = parser.parse_args()
 
     # Sanity check.
@@ -106,16 +136,19 @@ if __name__ == '__main__':
         if os.path.isfile(args.inImage) and os.path.isfile(args.inGPS):
             sync = Synchronizer(args.inImage, args.inGPS, args.outCSV)
             sync.synchronize()
+            if args.enableDecimateX2:
+                decimateImages(args.inImage, os.path.dirname(args.inImage), 2)
 
         # Synchronize some images.
         elif os.path.isdir(args.inImage) and os.path.isfile(args.inGPS):
+
             for file in sorted(os.listdir(args.inImage)):
                 image = args.inImage + "/" + file
                 if os.path.isfile(image) and (".JPG" in image):
                     sync = Synchronizer(image, args.inGPS, args.outCSV)
                     sync.synchronize()
-                else:
-                    print("Problems with the image")
+                    if args.enableDecimateX2:
+                        decimateImages(image, args.inImage, 2)
 
     else:
         print("Input paths don't exists")
