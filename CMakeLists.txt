@@ -101,6 +101,15 @@ target_link_libraries(preprocess
   ${OpenCV_LIBRARIES}
   ${catkin_LIBRARIES})
 
+# Mono-Pre-process
+add_executable(preprocess_mono
+  src/nodes/preprocess_node_mono.cpp
+  src/preprocess_mono.cpp)
+target_link_libraries(preprocess_mono
+  ${eigen_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${catkin_LIBRARIES})
+
 # Reconstruction commented by fbf 19/01/2021 . uncomment for 3D reconstruction
 ##add_executable(reconstruction
 ##  src/nodes/reconstruction_node.cpp
