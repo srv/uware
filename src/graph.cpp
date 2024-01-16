@@ -4,19 +4,21 @@
 
 namespace uware
 {
-  Graph::Graph()
+  Graph::Graph() {}
+
+  void Graph::optimize(vector<PoseInfo>& poses, vector<EdgeInfo>& edges)
   {
+    vertex_names_.clear();
+
     // Initialize the g2o graph optimizer
+    g2o::SparseOptimizer graph_optimizer;
     g2o::BlockSolverX::LinearSolverType * linear_solver_ptr;
     linear_solver_ptr = new g2o::LinearSolverCholmod<g2o::BlockSolverX::PoseMatrixType>();
     g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linear_solver_ptr);
     g2o::OptimizationAlgorithmLevenberg * solver =
       new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
-    graph_optimizer_.setAlgorithm(solver);
-  }
+    graph_optimizer.setAlgorithm(solver);
 
-  void Graph::optimize(vector<PoseInfo>& poses, vector<EdgeInfo>& edges)
-  {
     // Add vertices
     for (uint i=0; i<poses.size(); i++)
     {
@@ -32,7 +34,7 @@ namespace uware
         // First time, no edges.
         cur_vertex->setFixed(true);
       }
-      graph_optimizer_.addVertex(cur_vertex);
+      graph_optimizer.addVertex(cur_vertex);
 
       vertex_names_.push_back(make_pair(i,poses[i].name));
     }
@@ -46,8 +48,8 @@ namespace uware
         ROS_ERROR_STREAM("[Reconstruction]: Bad vertex index for name " << edges[i].name_a);
       if (b<0)
         ROS_ERROR_STREAM("[Reconstruction]: Bad vertex index for name " << edges[i].name_b);
-      g2o::VertexSE3* v_a = dynamic_cast<g2o::VertexSE3*>(graph_optimizer_.vertices()[a]);
-      g2o::VertexSE3* v_b = dynamic_cast<g2o::VertexSE3*>(graph_optimizer_.vertices()[b]);
+      g2o::VertexSE3* v_a = dynamic_cast<g2o::VertexSE3*>(graph_optimizer.vertices()[a]);
+      g2o::VertexSE3* v_b = dynamic_cast<g2o::VertexSE3*>(graph_optimizer.vertices()[b]);
 
       // Eigen::Matrix<double, 6, 6> information = Eigen::Matrix<double, 6, 6>::Identity() * (double)sigma;
 
@@ -58,18 +60,18 @@ namespace uware
       e->setVertex(1, v_b);
       e->setMeasurement(t);
       // e->setInformation(information);
-      graph_optimizer_.addEdge(e);
+      graph_optimizer.addEdge(e);
     }
 
     // Optimize!
-    graph_optimizer_.initializeOptimization();
-    graph_optimizer_.optimize(20);
+    graph_optimizer.initializeOptimization();
+    graph_optimizer.optimize(20);
 
     // Return the optimized poses
     vector<PoseInfo> new_poses;
-    for (uint i=0; i<graph_optimizer_.vertices().size(); i++)
+    for (uint i=0; i<graph_optimizer.vertices().size(); i++)
     {
-      g2o::VertexSE3* v =  dynamic_cast<g2o::VertexSE3*>(graph_optimizer_.vertices()[i]);
+      g2o::VertexSE3* v =  dynamic_cast<g2o::VertexSE3*>(graph_optimizer.vertices()[i]);
       tf::Transform pose = Utils::isometryToTf(v->estimate());
       PoseInfo p(poses[i].name, pose);
       new_poses.push_back(p);

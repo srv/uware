@@ -13,13 +13,15 @@ using namespace uware;
 
 /** \brief Main entry point
   */
+void storeOdometry(string filename, int id, string outdir, tf::Transform odometry);
+
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "uware_reconstruction");
 
   ros::NodeHandle nh;
   ros::NodeHandle nhp("~");
-
   // Read parameters
   FrameToFrame::Params ftf_params;
   LoopClosing::Params lc_params;
@@ -75,17 +77,42 @@ int main(int argc, char **argv)
 
   // Loop closing registration
   LoopClosing loop_closing(registration);
+
   loop_closing.setParams(lc_params);
-  loop_closing.compute(poses, edges);
+
+  loop_closing.compute(poses, edges);// fbf 19/10/2017 next we store the matrices with all the poses in the hard disc
+
+  // -------------------------------- //fbf 19/10/2017 odom is a TF
+    ROS_INFO_STREAM("get in the loop, outdir: " << reg_params.outdir);
+    Utils::createDir(reg_params.outdir + "/homographies/");
+      for (uint p=0; p<poses.size(); p++)
+      {
+      tf::Transform odom = poses[p].pose;
+      tf::Matrix3x3 obase = odom.getBasis();
+      double oyaw, dummy_1, dummy_2;
+      obase.getRPY(dummy_1, dummy_2, oyaw);
+      cv::Mat HP = (cv::Mat_<double>(3,3) << cos(oyaw), -sin(oyaw), odom.getOrigin().x(), sin(oyaw),  cos(oyaw), odom.getOrigin().y(), 0, 0, 1.0);
+      ROS_INFO("create the file in /homographies");
+
+      cv::FileStorage fs(reg_params.outdir + "/homographies/" + Utils::id2str(p) + ".yaml", cv::FileStorage::WRITE);
+      cv::write(fs, "filename", "/tmp/mosaicing/images/" + Utils::id2str(p) + ".jpg");
+      cv::write(fs, "HP", HP);
+      fs.release();
+
+      storeOdometry(ODOM_FILE, p, reg_params.outdir, odom);
+
+      // -------------------------------- end fbf 19/10/2017
+       }
+
 
   ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
   ROS_INFO("[Reconstruction]:                        BUILD 3D                            ");
   ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
-
+ // fbf 19/10/2017 commented the 3D reconstruction. Only interested in the optimized poses
   // Build 3D
-  Build3D build3d;
-  build3d.setParams(b3d_params);
-  build3d.build(poses);
+//  Build3D build3d;
+ // build3d.setParams(b3d_params);
+//  build3d.build(poses);
 
   ROS_INFO("[Reconstruction]: -----------------------------------------------------------");
   ROS_INFO("[Reconstruction]:                        FINISHED!                           ");
@@ -95,3 +122,23 @@ int main(int argc, char **argv)
 
   return 0;
 }
+
+void storeOdometry(string filename, int id, string outdir,  tf::Transform odometry)
+  {
+    string odom_file = outdir + "/" + filename;
+    fstream f_odom(odom_file.c_str(), ios::out | ios::app);
+
+    f_odom << fixed <<
+    setprecision(6) <<
+    Utils::id2str(id) << "," <<
+    
+    odometry.getOrigin().x() << "," <<
+    odometry.getOrigin().y() << "," <<
+    odometry.getOrigin().z() << "," <<
+    odometry.getRotation().x() << "," <<
+    odometry.getRotation().y() << "," <<
+    odometry.getRotation().z() << "," <<
+    odometry.getRotation().w() <<  endl;
+
+    f_odom.close();
+  }

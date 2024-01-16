@@ -4,6 +4,15 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/Range.h>
+//#include <geometry_msgs/Quaternion>
+#include <cola2_msgs/NavSts.h>
+#include <cola2_msgs/NED.h>
+#include <cola2_msgs/RPY.h>
+#include <cola2_msgs/DecimalLatLon.h>
+#include <cola2_msgs/VehicleStatus.h>
+#include <ned_tools/ned.h>
+
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -23,11 +32,13 @@
 #include <pcl/filters/crop_box.h>
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/nonfree/features2d.hpp>
+//#include <opencv2/features2d/features2d.hpp>
+//#include <opencv2/nonfree/features2d.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <eigen3/Eigen/Dense>
+
 
 #include <orb_utils/Frame.h>
 #include <orb_utils/ORBextractor.h>
@@ -70,7 +81,7 @@ public:
       epipolar_th       = 1.5;
     }
   };
-
+  
   /** \brief Set class params
    * \param the parameters struct
    */
@@ -88,14 +99,15 @@ public:
    * \param l_info left stereo info message of type sensor_msgs::CameraInfo
    * \param r_info right stereo info message of type sensor_msgs::CameraInfo
    * \param pointcloud
-   */
+   */// const sensor_msgs::PointCloud2ConstPtr& cloud_msg
   void callback(const nav_msgs::Odometry::ConstPtr& odom_msg,
                 const nav_msgs::Odometry::ConstPtr& map_msg,
                 const sensor_msgs::ImageConstPtr& l_img_msg,
                 const sensor_msgs::ImageConstPtr& r_img_msg,
                 const sensor_msgs::CameraInfoConstPtr& l_info_msg,
                 const sensor_msgs::CameraInfoConstPtr& r_info_msg,
-                const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
+                const sensor_msgs::RangeConstPtr& altitude_msg,
+                const cola2_msgs::NavSts::ConstPtr& navstatus_msg);
 
 
 protected:
@@ -122,6 +134,8 @@ protected:
    */
   void storeOdometry(string filename, int id, double stamp, tf::Transform odometry);
 
+  void storeNavSts(string filename, int id, double stamp, float lat, float lon, float h, float latiupright, float lonupright, float hupright, float latupleft, float lonupleft, float hupleft, float latdownright, float londownright, float hdownright, float latdownleft, float londownleft, float hdownleft);
+
   /** \brief Store image data into file
    * @return number of left keypoints
    * \param left image
@@ -146,6 +160,10 @@ protected:
    * \param Odometry message
    */
   tf::Transform odom2Tf(nav_msgs::Odometry odom_msg);
+  tf::Transform data2Tf(double  W, double  Y, double roll1, double pitch1, double yaw1);
+
+
+  nav_msgs::Odometry Tf2odom(tf::Transform Tf);
 
   /** \brief Get the transform between odometry frame and camera frame
    * @return true if valid transform, false otherwise
@@ -161,7 +179,8 @@ protected:
    * @return filtered cloud
    * \param input cloud
    */
-  PointCloud::Ptr filterCloud(PointCloud::Ptr in_cloud);
+  /* fbf commentted on 18/01/2021 uncomment of PC storage
+  PointCloud::Ptr filterCloud(PointCloud::Ptr in_cloud); */
 
 
 private:
@@ -188,6 +207,8 @@ private:
 
   image_geometry::StereoCameraModel stereo_camera_model_; //!> Stereo camera model
   float baseline_; //!> Stereo baseline multiplied by fx.
+                              //!< reference frame the AUV is in
+
 
 };
 

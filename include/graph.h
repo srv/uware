@@ -43,8 +43,6 @@ protected:
 
 private:
 
-  g2o::SparseOptimizer graph_optimizer_; //!> G2O graph optimizer
-
   vector< pair<int,string> > vertex_names_; //!> Table of vertex names
 
 };

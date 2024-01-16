@@ -101,7 +101,6 @@ public:
 
     // Get the pointcloud poses file
     int line_counter = 0;
-    tf::Transform zero_pose;
     ifstream poses_file(poses_file_str.c_str());
     string line;
     while (getline(poses_file, line))

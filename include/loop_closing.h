@@ -36,12 +36,14 @@ public:
   struct Params
   {
     string indir;                   //!> Input directory (the output of pre-process)
+    string outdir;                  //!> Output directory
     int discard_window;             //!> Number of previous and consecutive nodes to discard in the loop closing search
     int n_best;                     //!> Number of candidates to take to try the loop closing
 
     // Default settings
     Params () {
       indir                   = "";
+      outdir                  = "";
       discard_window          = 5;
       n_best                  = 5;
     }
@@ -66,6 +68,8 @@ public:
 protected:
 
   vector<uint> getClosestPoses(vector<PoseInfo> poses, uint id, int n_best, int discard_window, bool xy);
+
+  double getFrameStamp(string name);
 
 private:
 

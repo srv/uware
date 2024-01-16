@@ -1,0 +1,52 @@
+<launch>
+
+   <arg name="bagfile" default="      
+    /home/miguel/Desktop/mosaics/bagfiles/17_26_50/images_2023-03-07-17-26-51_0.bag
+    /home/miguel/Desktop/mosaics/bagfiles/17_26_50/images_2023-03-07-17-33-10_1.bag
+    /home/miguel/Desktop/mosaics/bagfiles/17_26_50/topics_2023-03-07-17-27-05_0.bag" />     				<!-- PARAM -->
+
+  <arg name="robot" default="/turbot"/>				      <!-- PARAM -->
+  <arg name="camera" default="/stereo_down"/>				<!-- PARAM -->
+  <arg name="decimation" default="1"/>				      <!-- PARAM -->
+  <arg name="disparity_params" value="/home/miguel/mosaic_ws/src/uware/config/disparity_params_full_x$(arg decimation).yaml" />				<!-- PARAM -->
+  <arg name="store_distance" default="0.75"/>				<!-- PARAM -->
+  <arg name="outdir" default="/home/miguel/Desktop/mosaics/outs/17_26_50/uware"/>				<!-- PARAM -->
+
+  <param name="/use_sim_time" value="true"/>
+
+  <node pkg="rosbag" type="play" name="rosbag" args="--clock $(arg bagfile) -r 0.5" />
+
+
+  <node pkg="odometry2range" type="odometry2range" name="odometry2range" output="screen">   <!-- not always necessary, PARAM -->
+    <remap from="odometry" to="$(arg robot)/navigator/altitude/ekf_alt/odometry"/>
+    <remap from="Range" to="$(arg robot)/navigator/altitude_EKF_filtered"/>
+  </node>
+
+  <include file="/home/miguel/mosaic_ws/src/uware/launch/image_proc.launch">
+    <arg name="camera_name" value="$(arg camera)" />
+    <arg name="decimation" value="$(arg decimation)" />
+    <arg name="disparity_params" value="$(arg disparity_params)" />
+  </include>
+
+  <node pkg="image_preprocessing" type="color_correction_image" name="color_correction_image_left" output="screen">
+    <remap from="/color_correction_image/input" to="$(arg camera)/scaled_x$(arg decimation)/left/image_rect_color"/>
+    <remap from="/color_correction_image/output" to="$(arg camera)/scaled_x$(arg decimation)/left/image_rect_color_clahe"/>
+  </node>
+
+  <node pkg="uware" type="preprocess" name="preprocess" output="screen">
+    <param name="odom_topic" value="$(arg robot)/navigator/ekf_odom/odometry"/>
+    <param name="map_topic" value="$(arg robot)/navigator/ekf_map/odometry"/>
+    <param name="camera_left_topic" value="$(arg camera)/scaled_x$(arg decimation)/left/image_rect_color_clahe"/>
+    <param name="camera_right_topic" value="$(arg camera)/scaled_x$(arg decimation)/right/image_rect_color"/>
+    <param name="camera_right_info" value="$(arg camera)/scaled_x$(arg decimation)/right/camera_info"/>
+    <param name="camera_left_info" value="$(arg camera)/scaled_x$(arg decimation)/left/camera_info"/>
+    <param name="camera_topic_points2" value="$(arg camera)/scaled_x$(arg decimation)/points2"/>
+    <param name="altitude_topic" value="$(arg robot)/navigator/altitude_EKF_filtered"/>
+    <param name="navstatus_topic" value="$(arg robot)/navigator/navigation"/>
+    <param name="min_cloud_size" value="400"/>
+    <param name="store_distance" value="$(arg store_distance)"/>
+    <param name="outdir" value="$(arg outdir)"/>
+
+  </node>
+
+</launch>

@@ -141,7 +141,7 @@ namespace uware
 
   void Registration::pipeline(const uint& id_src,
                               const uint& id_tgt,
-                              const tf::Transform& initial_guest,
+                              const tf::Transform& initial_guess,
                               bool& valid_sim3,
                               bool& valid_icp,
                               int& sim3_inliers,
@@ -151,7 +151,7 @@ namespace uware
                               tf::Transform& out)
   {
     // Init edge information
-    out = initial_guest;
+    out = initial_guess;
     valid_sim3 = false;
     valid_icp = false;
     sim3_inliers = 0;
@@ -228,13 +228,13 @@ namespace uware
                       ".pcd is: " << tgt_salient_ids << "\%");
     }
 
-    if (src_salient_ids > params_.min_salient_ids &&
-        tgt_salient_ids > params_.min_salient_ids)
+    if (src_salient_ids >= params_.min_salient_ids &&
+        tgt_salient_ids >= params_.min_salient_ids)
     {
       ROS_INFO("[Reconstruction]: Aligning clouds...");
 
       tf::Transform tf_icp = out;
-      valid_icp = regClouds(src_cloud, tgt_cloud, icp_score, tf_icp);
+      valid_icp = false; //regClouds(src_cloud, tgt_cloud, icp_score, tf_icp);
       if (valid_icp)
       {
         double err = Utils::tfDist(out, tf_icp);

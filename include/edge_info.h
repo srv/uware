@@ -1,4 +1,4 @@
-#ifndef EDGEINFO_H
+  #ifndef EDGEINFO_H
 #define EDGEINFO_H
 
 #include <ros/ros.h>
