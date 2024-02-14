@@ -1,0 +1,35 @@
+
+
+On 14/2/2023 <3
+
+*** once the guide is completed, change uware and uware2 git commit id ***
+
+ros melodic
+create a workspace
+build the following packages from srv github:
+ - image_preprocessing - branch  melodic at 5621e33
+ - mosaic_from_images_homographies - branch 
+ - odometry2range - branch dev_conboser at d49efc2
+ - orb_utils - branch kinetic at ae0a73d
+ - turbot_stack - branch melodic at d8c32d2
+ - uware - branch dev_conboser at 4bc4597
+ - uware2 - branch main at 5a9331d
+
+
+Uware
+-----
+uware/launch/ware.launch
+mosaic_from_images_homographies/launch/mosaicing.launch
+
+
+Uware2
+-----
+uware2/auto_mosaics/launch/imu.launch
+uware2/auto_mosaics/launch/overlap.launch
+uware2/auto_mosaics/scripts/preprocess_mosaic.py
+mosaic_from_images_homographies/launch/mosaicing.launch
+
+
+
+
+
