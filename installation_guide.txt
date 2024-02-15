@@ -1,35 +1,34 @@
-
-
 On 14/2/2023 <3
 
-*** once the guide is completed, change uware and uware2 git commit id ***
+* ros melodic
 
-ros melodic
-create a workspace
-build the following packages from srv github:
- - image_preprocessing - branch  melodic at 5621e33
- - mosaic_from_images_homographies - branch 
- - odometry2range - branch dev_conboser at d49efc2
- - orb_utils - branch kinetic at ae0a73d
- - turbot_stack - branch melodic at d8c32d2
- - uware - branch dev_conboser at 4bc4597
- - uware2 - branch main at 5a9331d
+* create a workspace
 
+* build the following packages from srv github:
+    - image_preprocessing - branch  melodic at 5621e33
+    - mosaic_from_images_homographies - branch 
+    - odometry2range - branch dev_conboser at d49efc2
+    - orb_utils - branch kinetic at ae0a73d
+    - turbot_stack - branch melodic at d8c32d2
+    - uware - branch dev_conboser at 4bc4597
 
-Uware
------
-uware/launch/ware.launch
-mosaic_from_images_homographies/launch/mosaicing.launch
+* create and activate uware conda environment: $ conda env create -f uware/uware.yml
 
+* execute the homography extractor: $ roslaunch uware/launch/uware.launch
+    <param name="bagfile" value="bagfiles.bag"/>                                                <!-- PARAM: bagfiles to play -->
+    <param name="robot" value="/turbot"/>                                                       <!-- PARAM: namespace -->
+    <param name="camera" value="/stereo_down"/>                                                 <!-- PARAM: namespace -->
+    <param name="decimation" value="1"/>                                                        <!-- PARAM: image decimation -->
+    <param name="disparity_params" ../config/disparity_params_full_x$(arg decimation).yaml" />  <!-- PARAM: disparity params -->
+    <param name="store_distance" value="0.75"/>                                                 <!-- PARAM: distance between frames -->
+    <param name="outdir" value="output/directory"/>                                             <!-- PARAM: output dir -->
+    <node pkg="odometry2range" type="odometry2range" name="odometry2range" output="screen">     <!-- PARAM: only execute this node if remapping is needed, depends on the bagfile-->
 
-Uware2
------
-uware2/auto_mosaics/launch/imu.launch
-uware2/auto_mosaics/launch/overlap.launch
-uware2/auto_mosaics/scripts/preprocess_mosaic.py
-mosaic_from_images_homographies/launch/mosaicing.launch
-
-
-
-
-
+* execute the mosaicing: $ roslaunch mosaic_from_images_homographies/launch/mosaicing.launch
+    <param name="work_dir" value="path/to/homographies"/>     <!-- PARAM: homographies dir -->
+    <param name="dir_results" value="output/path"/>           <!-- PARAM: output dir -->
+    <param name="fx" value="1916.04862"/>                     <!-- PARAM: focal x axis -->
+    <param name="fy" value="1916.04862"/>                     <!-- PARAM: focal y axis -->
+    <param name="height" value="3.0"/>                        <!-- PARAM: mean height -->
+    <param name="htype" value="HM"/>                          <!-- PARAM: HO or HM type of homographies -->
+    <param name="resulting_file" value="mosaic_name.jpg"/>    <!-- PARAM: name of output mosaic file -->

@@ -1,16 +1,16 @@
 <launch>
 
-   <arg name="bagfile" default="      
+   <param name="bagfile" value="      
     /home/miguel/Desktop/mosaics/bagfiles/17_26_50/images_2023-03-07-17-26-51_0.bag
     /home/miguel/Desktop/mosaics/bagfiles/17_26_50/images_2023-03-07-17-33-10_1.bag
     /home/miguel/Desktop/mosaics/bagfiles/17_26_50/topics_2023-03-07-17-27-05_0.bag" />     				<!-- PARAM -->
 
-  <arg name="robot" default="/turbot"/>				      <!-- PARAM -->
-  <arg name="camera" default="/stereo_down"/>				<!-- PARAM -->
-  <arg name="decimation" default="1"/>				      <!-- PARAM -->
-  <arg name="disparity_params" value="/home/miguel/mosaic_ws/src/uware/config/disparity_params_full_x$(arg decimation).yaml" />				<!-- PARAM -->
-  <arg name="store_distance" default="0.75"/>				<!-- PARAM -->
-  <arg name="outdir" default="/home/miguel/Desktop/mosaics/outs/17_26_50/uware"/>				<!-- PARAM -->
+  <param name="robot" value="/turbot"/>				      <!-- PARAM -->
+  <param name="camera" value="/stereo_down"/>				<!-- PARAM -->
+  <param name="decimation" value="1"/>				      <!-- PARAM -->
+  <param name="disparity_params" value="/home/miguel/mosaic_ws/src/uware/config/disparity_params_full_x$(param decimation).yaml" />				<!-- PARAM -->
+  <param name="store_distance" value="0.75"/>				<!-- PARAM -->
+  <param name="outdir" value="/home/miguel/Desktop/mosaics/outs/17_26_50/uware"/>				<!-- PARAM -->
 
   <param name="/use_sim_time" value="true"/>
 
