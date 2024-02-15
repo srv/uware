@@ -10,7 +10,7 @@ On 14/2/2023 <3
     - odometry2range - branch dev_conboser at d49efc2
     - orb_utils - branch kinetic at ae0a73d
     - turbot_stack - branch melodic at d8c32d2
-    - uware - branch dev_conboser at 4bc4597
+    - uware - branch dev_conboser at be99e0e
 
 * create and activate uware conda environment: $ conda env create -f uware/uware.yml
 
