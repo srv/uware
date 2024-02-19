@@ -6,7 +6,7 @@ On 14/2/2023 <3
 
 * build the following packages from srv github:
     - image_preprocessing - branch  melodic at 5621e33
-    - mosaic_from_images_homographies - branch 
+    - mosaic_from_images_homographies - branch dev_conboser at d49efc2
     - odometry2range - branch dev_conboser at d49efc2
     - orb_utils - branch kinetic at ae0a73d
     - turbot_stack - branch melodic at d8c32d2
