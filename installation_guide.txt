@@ -6,11 +6,12 @@ On 14/2/2023 <3
 
 * build the following packages from srv github, IN THE LISTED ORDER:
     - image_preprocessing - branch  melodic at 5621e33
-    - mosaic_from_images_homographies - branch dev_conboser at d49efc2
+    - mosaic_from_images_homographies - branch dev_conboser at 5321d81
     - topics_parsers - branch dev_conboser at 6a1d889
     - orb_utils - branch kinetic at ae0a73d
     - turbot_stack - branch melodic at d8c32d2 - build ned_tools & cola2_turbot first
-    - uware - branch dev_conboser at be99e0e
+    - uware - branch dev_conboser at 4cba5da
+
 
 * create and activate uware conda environment: $ conda env create -f uware/uware.yml
 
@@ -25,10 +26,11 @@ On 14/2/2023 <3
     <node pkg="odometry2range" type="odometry2range" name="odometry2range" output="screen">     <!-- PARAM: only execute this node if remapping is needed, depends on the bagfile-->
 
 * execute the mosaicing: $ roslaunch mosaic_from_images_homographies/launch/mosaicing.launch
-    <param name="work_dir" value="path/to/homographies"/>     <!-- PARAM: homographies dir -->
-    <param name="dir_results" value="output/path"/>           <!-- PARAM: output dir -->
-    <param name="fx" value="1916.04862"/>                     <!-- PARAM: focal x axis -->
-    <param name="fy" value="1916.04862"/>                     <!-- PARAM: focal y axis -->
-    <param name="height" value="3.0"/>                        <!-- PARAM: mean height -->
-    <param name="htype" value="HM"/>                          <!-- PARAM: HO or HM type of homographies -->
-    <param name="resulting_file" value="mosaic_name.jpg"/>    <!-- PARAM: name of output mosaic file -->
+    <param name="work_dir" value="/home/miguel/Desktop/mosaics/outs/test_xesc_overlap/preprocess/HM/" />	<!-- PARAM -->
+    <param name="dir_results" value="/home/miguel/Desktop/mosaics/outs/test_xesc_overlap/mosaic/" />	<!-- PARAM -->
+    <param name="fx" value="479.01215"/>	<!-- 1916.04862 958.02431 479.01215 PARAM -->
+    <param name="fy" value="479.01215"/>	<!-- 1916.04862 958.02431 479.01215 PARAM -->
+    <param name="scaled" value="4"/>	    <!-- 1 2 4  PARAM -->
+    <param name="height" value="2"/>							<!-- PARAM get hmean -->
+    <param name="htype" value="HM" />							<!-- PARAM HO/HM -->
+    <param name="resulting_file" value="mosaic_x4.jpg" />		<!-- PARAM -->
