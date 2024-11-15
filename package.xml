@@ -1,4 +1,6 @@
-<package>
+<?xml version="1.0"?>
+<package format="2">
+
   <name>uware</name>
   <version>0.0.1</version>
   <description>uware</description>
@@ -44,7 +46,9 @@
   <run_depend>pcl_ros</run_depend>
   <run_depend>tf_conversions</run_depend>
   <!-- <run_depend>orb_utils</run_depend> -->
+
 <!-- The export tag contains other, unspecified, tags -->
   <export>
   </export>
+  
 </package>
