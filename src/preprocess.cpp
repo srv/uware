@@ -8,13 +8,13 @@ namespace uware
   PreProcess::PreProcess() : initialization_(true), first_(true), id_(0)
   {
     // ORB parameters
-    int     n_features    = 2000;
-    float   scale_factor  = 1.2;
-    int     n_levels      = 8;
-    int     ini_th_fast   = 20;
-    int     min_th_fast   = 7;
-    l_ORB_extractor_ = new orb_utils::ORBextractor(n_features, scale_factor, n_levels, ini_th_fast, min_th_fast);
-    r_ORB_extractor_ = new orb_utils::ORBextractor(n_features, scale_factor, n_levels, ini_th_fast, min_th_fast);
+    // int     n_features    = 2000;
+    // float   scale_factor  = 1.2;
+    // int     n_levels      = 8;
+    // int     ini_th_fast   = 20;
+    // int     min_th_fast   = 7;
+    // l_ORB_extractor_ = new orb_utils::ORBextractor(n_features, scale_factor, n_levels, ini_th_fast, min_th_fast);
+    // r_ORB_extractor_ = new orb_utils::ORBextractor(n_features, scale_factor, n_levels, ini_th_fast, min_th_fast);
     ROS_INFO("[PreProcess]: init Preprocess node.");
   }
 
