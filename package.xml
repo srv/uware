@@ -30,25 +30,25 @@
   <build_depend>tf_conversions</build_depend>
   <!-- <build_depend>orb_utils</build_depend> -->
 
-  <run_depend>roscpp</run_depend>
-  <run_depend>nav_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>cola2_msgs</run_depend>
-  <run_depend>ned_tools</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>image_transport</run_depend>
-  <run_depend>message_filters</run_depend>
-  <run_depend>message_runtime</run_depend>
-  <run_depend>cv_bridge</run_depend>
-  <run_depend>image_geometry</run_depend>
-  <!--run_depend>libhaloc</run_depend-->
-  <run_depend>pcl_ros</run_depend>
-  <run_depend>tf_conversions</run_depend>
-  <!-- <run_depend>orb_utils</run_depend> -->
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>cola2_msgs</exec_depend>
+  <exec_depend>ned_tools</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>image_geometry</exec_depend>
+  <!--exec_depend>libhaloc</exec_depend-->
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>tf_conversions</exec_depend>
+  <!-- <exec_depend>orb_utils</exec_depend> -->
 
 <!-- The export tag contains other, unspecified, tags -->
   <export>
   </export>
-  
+
 </package>
