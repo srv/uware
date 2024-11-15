@@ -24,14 +24,14 @@
 #include <pcl/filters/crop_box.h>
 
 #include <opencv2/opencv.hpp>
-//#include <opencv2/features2d/features2d.hpp>
-//#include <opencv2/nonfree/features2d.hpp>
+// #include <opencv2/features2d.hpp>
+// #include <opencv2/xfeatures2d.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <orb_utils/Frame.h>
-#include <orb_utils/ORBextractor.h>
+// #include <orb_utils/Frame.h>
+// #include <orb_utils/ORBextractor.h>
 
 #include "constants.h"
 #include "utils.h"
@@ -184,8 +184,8 @@ private:
   tf::Transform prev_odom_; //!> Previous odometry
 
   // ORB extractors
-  orb_utils::ORBextractor* l_ORB_extractor_;
-  orb_utils::ORBextractor* r_ORB_extractor_;
+  // orb_utils::ORBextractor* l_ORB_extractor_;
+  // orb_utils::ORBextractor* r_ORB_extractor_;
 
   cv::Mat camera_matrix_; //!> Camera matrix
 
